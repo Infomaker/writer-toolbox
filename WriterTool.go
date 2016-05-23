@@ -10,7 +10,7 @@ var cluster, command, instanceId, instanceName, service, sshPem string
 var region = "eu-west-1"
 
 func init() {
-	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listEc2Services, ssh]")
+	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listEc2Services, ssh, scp]")
 	flag.StringVar(&cluster, "cluster", "", "Specify full arn of cluster to use")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
@@ -81,16 +81,36 @@ func main() {
 			errUsage("A SSH PEM file must be specified")
 		}
 		if instanceId != "" {
-			ip := GetIpForInstanceId(instanceId)
-			Ssh(ip, sshPem, flag.Args())
+			instance := GetInstanceForId(instanceId)
+			Ssh(instance, sshPem, flag.Args())
 		} else if instanceName != "" {
-			ips := GetIpsForInstanceName(instanceName)
+			instances := GetInstancesForName(instanceName)
+			if (len(instances) == 1) {
+				Ssh(instances[0], sshPem, flag.Args())
+			} else {
+				for i := 0; i < len(instances); i++ {
+					fmt.Printf("[%s]\n", instances[i])
+					Ssh(instances[i], sshPem, flag.Args())
+				}
+			}
+		} else {
+			errUsage("Either instanceId or instanceName parameter has to be specified")
+		}
+	case "scp":
+		if sshPem == "" {
+			errUsage("A SSH PEM file must be specified")
+		}
+		if instanceId != "" {
+			instance := GetInstanceForId(instanceId)
+			Scp(instance, sshPem, flag.Args())
+		} else if instanceName != "" {
+			ips := GetInstancesForName(instanceName)
 			if (len(ips) == 1) {
 				Ssh(ips[0], sshPem, flag.Args())
 			} else {
 				for i := 0; i < len(ips); i++ {
 					fmt.Printf("[%s]\n", ips[i])
-					Ssh(ips[i], sshPem, flag.Args())
+					Scp(ips[i], sshPem, flag.Args())
 				}
 			}
 		} else {

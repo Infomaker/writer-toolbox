@@ -63,32 +63,32 @@ func _getName(tags []*ec2.Tag) string {
 	return "-"
 }
 
-func GetIpForInstanceId(instanceId string) string {
+func GetInstanceForId(instanceId string) *ec2.Instance {
 	resp := _listEc2Instances();
 
 	for i := 0; i < len(resp.Reservations); i++ {
 		for j:= 0; j < len(resp.Reservations[i].Instances); j++ {
 			instance := resp.Reservations[i].Instances[j]
 			if *instance.InstanceId == instanceId {
-				return *instance.PublicIpAddress;
+				return instance;
 			}
 		}
 	}
 
-	return "";
+	return nil;
 }
 
-func GetIpsForInstanceName(name string) []string {
+func GetInstancesForName(name string) []*ec2.Instance {
 	resp := _listEc2Instances();
 
-	var result []string
+	var result []*ec2.Instance
 
 
 	for i := 0; i < len(resp.Reservations); i++ {
 		for j:= 0; j < len(resp.Reservations[i].Instances); j++ {
 			instance := resp.Reservations[i].Instances[j]
 			if _getName(instance.Tags) == name {
-				result = append(result, *instance.PublicIpAddress);
+				result = append(result, instance);
 			}
 		}
 	}

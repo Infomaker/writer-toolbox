@@ -6,14 +6,16 @@ import (
 	"os"
 )
 
-var cluster, command, instanceId, service string
+var cluster, command, instanceId, instanceName, service, sshPem string
 var region = "eu-west-1"
 
 func init() {
-	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listEc2Services]")
+	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listEc2Services, ssh]")
 	flag.StringVar(&cluster, "cluster", "", "Specify full arn of cluster to use")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
+	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
 	flag.StringVar(&service, "service", "", "Specify ECS service")
+	flag.StringVar(&sshPem, "pemfile", "", "Specify PEM file for SSH acces")
 }
 
 func handleError(err error) {
@@ -57,6 +59,7 @@ func _getServiceArn() string {
 	return arn;
 }
 
+
 func main() {
 	flag.Parse()
 
@@ -73,8 +76,26 @@ func main() {
 		ListServices(clusterArn)
 	case "listEc2Instances":
 		ListEc2Instances()
-	//case "ssh":
-	//	Ssh(instanceId, flag.Args())
+	case "ssh":
+		if sshPem == "" {
+			errUsage("A SSH PEM file must be specified")
+		}
+		if instanceId != "" {
+			ip := GetIpForInstanceId(instanceId)
+			Ssh(ip, sshPem, flag.Args())
+		} else if instanceName != "" {
+			ips := GetIpsForInstanceName(instanceName)
+			if (len(ips) == 1) {
+				Ssh(ips[0], sshPem, flag.Args())
+			} else {
+				for i := 0; i < len(ips); i++ {
+					fmt.Printf("[%s]\n", ips[i])
+					Ssh(ips[i], sshPem, flag.Args())
+				}
+			}
+		} else {
+			errUsage("Either instanceId or instanceName parameter has to be specified")
+		}
 	default:
 		errUsage("Unknown command: " + command)
 	}

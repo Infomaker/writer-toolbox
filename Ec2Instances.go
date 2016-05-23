@@ -51,7 +51,6 @@ func ListEc2Instances() {
 			}
 		}
 	}
-
 }
 
 func _getName(tags []*ec2.Tag) string {
@@ -64,15 +63,35 @@ func _getName(tags []*ec2.Tag) string {
 	return "-"
 }
 
-func GetEc2InstanceArn(name, clusterArn string) string {
-	clusterArns := _listServices(clusterArn);
+func GetIpForInstanceId(instanceId string) string {
+	resp := _listEc2Instances();
 
-	for i := 0; i < len(clusterArns.ServiceArns); i++ {
-		arn := clusterArns.ServiceArns[i];
-		if (ServiceName(arn) == name) {
-			return *arn;
+	for i := 0; i < len(resp.Reservations); i++ {
+		for j:= 0; j < len(resp.Reservations[i].Instances); j++ {
+			instance := resp.Reservations[i].Instances[j]
+			if *instance.InstanceId == instanceId {
+				return *instance.PublicIpAddress;
+			}
 		}
 	}
 
 	return "";
+}
+
+func GetIpsForInstanceName(name string) []string {
+	resp := _listEc2Instances();
+
+	var result []string
+
+
+	for i := 0; i < len(resp.Reservations); i++ {
+		for j:= 0; j < len(resp.Reservations[i].Instances); j++ {
+			instance := resp.Reservations[i].Instances[j]
+			if _getName(instance.Tags) == name {
+				result = append(result, *instance.PublicIpAddress);
+			}
+		}
+	}
+
+	return result;
 }

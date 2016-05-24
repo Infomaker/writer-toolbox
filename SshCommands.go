@@ -18,7 +18,7 @@ func Ssh(instance *ec2.Instance, pemFile string, commands []string) {
 	arguments = append(arguments, "-i", pemFile, "ec2-user@" + *instance.PublicIpAddress)
 	arguments = append(arguments, commands...)
 
-	doExec(path, arguments)
+	doExec(path, arguments, true)
 }
 
 func Scp(instance *ec2.Instance, pemFile string, commands []string) {
@@ -27,16 +27,37 @@ func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 		errUsage("Couldn not find binary 'scp' in path")
 	}
 
+	if len(commands) != 1 {
+		errUsage("The Scp command requires 1 parameter")
+	}
+
 	var arguments []string
 
-	arguments = append(arguments, "-i", pemFile, "ec2-user@" + *instance.PublicIpAddress)
-	arguments = append(arguments, commands...)
-	arguments = append(arguments, CreateServerPathWithDate(*instance.InstanceId))
+	rflag := ""
+	if (recursive) {
+		rflag = "-r"
+	}
 
-	doExec(path, arguments)
+	name := _getName(instance.Tags) + "-" + *instance.InstanceId
+
+	arguments = append(arguments, "-i", pemFile, rflag, "-p", "ec2-user@" + *instance.PublicIpAddress + ":" + commands[0])
+
+	if (output == "") {
+		arguments = append(arguments, CreateServerPathWithDate(name))
+	} else {
+		mode := GetFileMode(output)
+
+		if !mode.IsDir() {
+			errUsage("Output '" + output + "' must be directory")
+		}
+
+		arguments = append(arguments, output)
+	}
+
+	doExec(path, arguments, false)
 }
 
-func doExec(path string, arguments []string) {
+func doExec(path string, arguments []string, doOutput bool) {
 	cmd := exec.Command(path, arguments...)
 
 	var out, stdErr bytes.Buffer
@@ -47,5 +68,7 @@ func doExec(path string, arguments []string) {
 		fmt.Println(stdErr.String())
 	}
 
-	fmt.Println(out.String())
+	if doOutput {
+		fmt.Println(out.String())
+	}
 }

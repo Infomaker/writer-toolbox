@@ -41,3 +41,17 @@ func CreateServerPathWithDate(server string) string {
 
 	return createFromToolkitPath(server, timestamp);
 }
+
+
+func GetFileMode(path string) os.FileMode{
+	f, err := os.Open(path)
+	if err != nil {
+		errUsage(err.Error())
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		errUsage(err.Error())
+	}
+	return fi.Mode()
+}

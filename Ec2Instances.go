@@ -47,7 +47,7 @@ func ListEc2Instances() {
 		for j := 0; j < len(resp.Reservations[i].Instances); j++ {
 			instance := resp.Reservations[i].Instances[j];
 			if *instance.State.Name == "running" {
-				fmt.Printf("%s (%s)\n", *instance.InstanceId, _getName(instance.Tags))
+				fmt.Printf("%s (%s): %s \n", *instance.InstanceId, *instance.PublicIpAddress, _getName(instance.Tags))
 			}
 		}
 	}

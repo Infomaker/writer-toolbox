@@ -23,7 +23,7 @@ func ServiceName(a *string) string {
 }
 
 func _listServices(cluster string) (*ecs.ListServicesOutput) {
-	svc := ecs.New(session.New(), &aws.Config{Region: aws.String(region)})
+	svc := ecs.New(session.New(), _getAwsConfig())
 
 	params := &ecs.ListServicesInput{
 		Cluster: aws.String(cluster),

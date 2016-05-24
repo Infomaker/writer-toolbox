@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"fmt"
 	"os"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 func ClusterName(a *string) string {
@@ -23,12 +22,6 @@ func ClusterName(a *string) string {
 	return res[0][1]
 }
 
-func _getAwsConfig() *aws.Config {
-	if (auth != nil) {
-		return &aws.Config{Region: aws.String(region), Credentials: credentials.NewStaticCredentials(auth.key, auth.secret, "")}
-	}
-	return &aws.Config{Region: aws.String(region)}
-}
 
 func _listClusters() (*ecs.ListClustersOutput) {
 	svc := ecs.New(session.New(), _getAwsConfig())

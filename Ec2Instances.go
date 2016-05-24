@@ -23,7 +23,7 @@ func Ec2Name(a *string) string {
 }
 
 func _listEc2Instances() *ec2.DescribeInstancesOutput {
-	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(region)})
+	svc := ec2.New(session.New(), _getAwsConfig())
 
 	params := &ec2.DescribeInstancesInput{
 		MaxResults: aws.Int64(30),

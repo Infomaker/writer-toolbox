@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 const toolpath = ".writer-tool"
@@ -54,4 +56,11 @@ func GetFileMode(path string) os.FileMode{
 		errUsage(err.Error())
 	}
 	return fi.Mode()
+}
+
+func _getAwsConfig() *aws.Config {
+	if (auth != nil) {
+		return &aws.Config{Region: aws.String(region), Credentials: credentials.NewStaticCredentials(auth.key, auth.secret, "")}
+	}
+	return &aws.Config{Region: aws.String(region)}
 }

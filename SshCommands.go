@@ -43,7 +43,7 @@ func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 	arguments = append(arguments, "-i", pemFile, rflag, "-p", "ec2-user@" + *instance.PublicIpAddress + ":" + commands[0])
 
 	if (output == "") {
-		arguments = append(arguments, CreateServerPathWithDate(name))
+		arguments = append(arguments, CreateDirUsingServerPathWithDate(name))
 	} else {
 		mode := GetFileMode(output)
 
@@ -51,7 +51,9 @@ func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 			errUsage("Output '" + output + "' must be directory")
 		}
 
-		arguments = append(arguments, output)
+		dir := CreateDir(output, name)
+
+		arguments = append(arguments, dir)
 	}
 
 	doExec(path, arguments, false)

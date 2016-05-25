@@ -13,12 +13,12 @@ import (
 const toolpath = ".writer-tool"
 
 
-func createPath(pathElement ...string) string {
+func buildPath(pathElement ...string) string {
 	return strings.Join(pathElement[:], "" + string(os.PathSeparator))
 }
 
 
-func createFromToolkitPath(elements ...string) string {
+func createDirFromToolkitPath(elements ...string) string {
 	user, err := user.Current()
 	if err != nil {
 		errUsage("Error looking up current user")
@@ -30,7 +30,7 @@ func createFromToolkitPath(elements ...string) string {
 
 	targetPath = append(targetPath, elements...)
 
-	path := createPath(targetPath...)
+	path := buildPath(targetPath...)
 	err = os.MkdirAll(path, 0755)
 	if err != nil {
 		errUsage(fmt.Sprintf("Problem creating dir [%s]", targetPath))
@@ -38,12 +38,23 @@ func createFromToolkitPath(elements ...string) string {
 	return path
 }
 
-func CreateServerPathWithDate(server string) string {
+func CreateDirUsingServerPathWithDate(server string) string {
 	timestamp := time.Now().Format("20060102-150405");
 
-	return createFromToolkitPath(server, timestamp);
+	return createDirFromToolkitPath(server, timestamp);
 }
 
+
+func CreateDir(source, target string) string {
+
+	path := buildPath(source, target)
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		errUsage(fmt.Sprintf("Problem creating dir [%s]", path))
+	}
+
+	return path
+}
 
 func GetFileMode(path string) os.FileMode{
 	f, err := os.Open(path)

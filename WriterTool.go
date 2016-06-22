@@ -9,7 +9,7 @@ import (
 	"regexp"
 )
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile string
+var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey string
 var recursive bool
 var region = "eu-west-1"
 var auth *Auth
@@ -20,8 +20,8 @@ type Auth struct {
 }
 
 func init() {
-	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listEc2Instances, ssh, scp]")
-	flag.StringVar(&cluster, "cluster", "", "Specify full arn of cluster to use")
+	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listTasks, updateService, listEc2Instances, ssh, scp]")
+	flag.StringVar(&cluster, "cluster", "", "Specify cluster to use")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
 	flag.StringVar(&service, "service", "", "Specify ECS service")
@@ -29,12 +29,25 @@ func init() {
 	flag.BoolVar(&recursive, "recursive", false, "Specify recursive operation")
 	flag.StringVar(&output, "output", "", "Specify output directory")
 	flag.StringVar(&credentialsFile, "credentials", "", "Specify credentials used for accessing AWS. Should be of format: .aws/credentials")
+	flag.StringVar(&awsKey, "awsKey", "", "AWS key used for authentication. Overrides credentials file")
+	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
 }
 
 func errUsage(message string) {
 	fmt.Println(message)
 	os.Exit(1);
 }
+
+func errState(message string) {
+	fmt.Println(message)
+	os.Exit(2)
+}
+
+func errStatef(message string, a ...interface{}) {
+	fmt.Printf(message, a)
+	os.Exit(2)
+}
+
 
 func _getClusterArn() string {
 	if (cluster == "") {
@@ -46,7 +59,23 @@ func _getClusterArn() string {
 		errUsage("Could not find cluster ARN for name: " + cluster);
 	}
 
-	return arn;
+	return arn
+}
+
+func _getServiceArn() string {
+	if (cluster == "") {
+		errUsage("You must specify a cluster name with: -cluster");
+	}
+
+	if (service == "") {
+		errUsage("You must specify a service name with: -service");
+	}
+
+	clusterArn := _getClusterArn();
+
+	serviceArn := GetServiceArn(clusterArn, service)
+
+	return serviceArn
 }
 
 func getAwsCredentials(filepath string) (awsAccessKeyId, awsSecretKey string) {
@@ -91,12 +120,30 @@ func main() {
 		auth.secret = secret
 	}
 
+	if (awsKey != "" && awsSecretKey == "" ) {
+		errUsage("Missing secretKey")
+	}
+
+	if (awsKey != "" && awsSecretKey != "" ) {
+		auth = new(Auth)
+		auth.key = awsKey
+		auth.secret = awsSecretKey
+	}
+
 	switch command {
 	case "listClusters":
 		ListClusters();
 	case "listServices":
-		clusterArn := _getClusterArn();
+		clusterArn := _getClusterArn()
 		ListServices(clusterArn)
+	case "listTasks":
+		clusterArn := _getClusterArn()
+		serviceArn := _getServiceArn()
+		ListTasks(clusterArn, serviceArn)
+	case "updateService":
+		clusterArn := _getClusterArn()
+		serviceArn := _getServiceArn()
+		UpdateService(clusterArn, serviceArn)
 	case "listEc2Instances":
 		ListEc2Instances()
 	case "ssh":

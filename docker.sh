@@ -11,7 +11,7 @@ rm -rf target
 mkdir target
 
 echo -n "Building writer toolbox ... "
-docker run -it --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp -e GOOS=linux -e GOARCH=amd64 -e CGO_ENABLED=0 golang:1.6 bash -c "go get -d ; go build -ldflags '-s' -o target/writer-tool"
+docker run -i --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp -e GOOS=linux -e GOARCH=amd64 -e CGO_ENABLED=0 golang:1.6 bash -c "go get -d ; go build -ldflags '-s' -o target/writer-tool"
 echo "done"
 
 cp Dockerfile target

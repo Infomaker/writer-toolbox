@@ -6,29 +6,24 @@ if [[ -z $1 ]]; then
   exit 1
 fi
 
-if [[ -z ${GOPATH} ]]; then
-   echo "There's no GOPATH. Need it to find project dependencies."
-   exit 1
-fi
 
 rm -rf target
-buildroot=target
+mkdir target
 
-echo -n "Installing dependencies ... "
-go get 
+echo -n "Building writer toolbox ... "
+docker run -it --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp -e GOOS=linux -e GOARCH=amd64 -e CGO_ENABLED=0 golang:1.6 bash -c "go get -d -v; go build -ldflags '-s' -v -o target/writer-tool"
 echo "done"
 
-echo -n "Compiling amd64 Linux binary ... "
-env GOOS=linux GOARCH=amd64 go build -o ${buildroot}/writer-tool
-echo "done"
-
-echo -n "Logging in to docker ... "
-eval $(aws ecr --region eu-west-1 get-login --registry-ids 685070497634)
-echo "done"
+cp Dockerfile target
 
 echo -n "Creating docker image ... "
-cp Dockerfile target
 docker build --no-cache=true -t  685070497634.dkr.ecr.eu-west-1.amazonaws.com/writer-tool:$1 target
+
+echo -n "Logging in to docker ... "
+eval $(aws ecr --profile im-docker-push --region eu-west-1 get-login --registry-ids 685070497634)
+echo "done"
+
+echo -n "Pusing to registry"
 docker push 685070497634.dkr.ecr.eu-west-1.amazonaws.com/writer-tool:$1
 echo "done"
 

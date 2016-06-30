@@ -155,7 +155,7 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 
 	for i := 0; i < attempts; i++ {
 		currentTasks := _listTasks(cluster, service)
-		if (len(currentTasks.TaskArns) < len(tasks)) {
+		if (len(currentTasks.TaskArns) < len(tasks) || len(currentTasks.TaskArns) == 0) {
 			fmt.Print(".")
 		} else if (newTask == ""){
 			newTask = _findNewTask(tasks, currentTasks.TaskArns)

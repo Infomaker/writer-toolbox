@@ -20,7 +20,7 @@ type Auth struct {
 }
 
 func init() {
-	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listTasks, updateService, listEc2Instances, ssh, scp]")
+	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listTasks, updateService, listEc2Instances, listLoadBalancers, ssh, scp]")
 	flag.StringVar(&cluster, "cluster", "", "Specify cluster to use")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
@@ -146,6 +146,8 @@ func main() {
 		UpdateService(clusterArn, serviceArn)
 	case "listEc2Instances":
 		ListEc2Instances()
+	case "listLoadBalancers":
+		ListLoadBalancers()
 	case "ssh":
 		if sshPem == "" {
 			errUsage("A SSH PEM file must be specified")

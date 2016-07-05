@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"fmt"
 	"os"
+	"github.com/aws/aws-sdk-go/service/elb"
 )
 
 func Ec2Name(a *string) string {
@@ -47,10 +48,58 @@ func ListEc2Instances() {
 		for j := 0; j < len(resp.Reservations[i].Instances); j++ {
 			instance := resp.Reservations[i].Instances[j];
 			if *instance.State.Name == "running" {
-				fmt.Printf("%s (%s): %s \n", *instance.InstanceId, *instance.PublicIpAddress, _getName(instance.Tags))
+				fmt.Printf("%s (%s): %s, %s \n", *instance.InstanceId, *instance.PublicIpAddress, _getName(instance.Tags), *instance.State.Name)
 			}
 		}
 	}
+}
+
+
+func _listLoadBalancers() *elb.DescribeLoadBalancersOutput {
+	svc := elb.New(session.New(), _getAwsConfig())
+
+	params := &elb.DescribeLoadBalancersInput{
+	}
+
+	resp, err := svc.DescribeLoadBalancers(params)
+	if (err != nil) {
+		fmt.Println(err.Error())
+		os.Exit(1);
+	}
+
+	return resp;
+}
+
+func ListLoadBalancers() {
+	resp := _listLoadBalancers()
+
+	for i := 0; i < len(resp.LoadBalancerDescriptions); i++ {
+		loadBalancer := resp.LoadBalancerDescriptions[i]
+		instances := _listEc2Instances();
+		fmt.Printf("%s (%s)\n", *loadBalancer.LoadBalancerName, *loadBalancer.DNSName)
+		for j:= 0; j < len(loadBalancer.Instances); j++ {
+			instanceItem := loadBalancer.Instances[j]
+			for k := 0; k < len(instances.Reservations); k++ {
+				//fmt.Printf("Iterating over reservation %d/%d containing %d instances\n", k, len(instances.Reservations), len(instances.Reservations[k].Instances))
+				instance := getInstanceForId(instances.Reservations[k].Instances, *instanceItem.InstanceId)
+				if (instance != nil) {
+					fmt.Printf("  * %s (%s): %s, %s\n", *instance.InstanceId, *instance.PublicIpAddress, _getName(instance.Tags), *instance.State.Name)
+				}
+			}
+		}
+	}
+}
+
+func getInstanceForId(instances []*ec2.Instance, instanceId string) *ec2.Instance {
+	for i := 0; i < len(instances); i++ {
+		//fmt.Println(*instances[i].InstanceId + ", " + instanceId)
+		if *instances[i].InstanceId == instanceId {
+			return instances[i]
+		}
+		//fmt.Printf("What is i? %d, what is len? %d\n", i, len(instances))
+	}
+
+	return nil;
 }
 
 func _getName(tags []*ec2.Tag) string {
@@ -67,7 +116,7 @@ func GetInstanceForId(instanceId string) *ec2.Instance {
 	resp := _listEc2Instances();
 
 	for i := 0; i < len(resp.Reservations); i++ {
-		for j:= 0; j < len(resp.Reservations[i].Instances); j++ {
+		for j := 0; j < len(resp.Reservations[i].Instances); j++ {
 			instance := resp.Reservations[i].Instances[j]
 			if *instance.InstanceId == instanceId {
 				return instance;
@@ -83,9 +132,8 @@ func GetInstancesForName(name string) []*ec2.Instance {
 
 	var result []*ec2.Instance
 
-
 	for i := 0; i < len(resp.Reservations); i++ {
-		for j:= 0; j < len(resp.Reservations[i].Instances); j++ {
+		for j := 0; j < len(resp.Reservations[i].Instances); j++ {
 			instance := resp.Reservations[i].Instances[j]
 			if _getName(instance.Tags) == name {
 				result = append(result, instance);

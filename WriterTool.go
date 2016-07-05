@@ -21,7 +21,7 @@ type Auth struct {
 }
 
 func init() {
-	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listTasks, updateService, listEc2Instances, listLoadBalancers, ssh, scp]")
+	flag.StringVar(&command, "command", "", "The command to use [help, listClusters, listServices, listTasks, updateService, listEc2Instances, listLoadBalancers, ssh, scp]")
 	flag.StringVar(&cluster, "cluster", "", "Specify cluster to use")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
@@ -36,6 +36,7 @@ func init() {
 
 func printCommandHelp() {
 	var m = map[string]string {
+		"help" : "Prints this help.",
 		"listClusters" : "List available clusters.",
 		"listServices" : "List available services. Needs -cluster flag.",
 		"listTasks" : "List tasks for a service. Needs -cluster, -service flags.",

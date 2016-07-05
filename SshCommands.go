@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"bytes"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"os"
 )
 
 func Ssh(instance *ec2.Instance, pemFile string, commands []string) {
@@ -68,6 +69,7 @@ func doExec(path string, arguments []string, doOutput bool) {
 	errRun := cmd.Run()
 	if (errRun != nil) {
 		fmt.Println(stdErr.String())
+		os.Exit(1)
 	}
 
 	if doOutput {

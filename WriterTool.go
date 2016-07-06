@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"regexp"
+	"sort"
 )
 
 var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey string
@@ -20,7 +21,7 @@ type Auth struct {
 }
 
 func init() {
-	flag.StringVar(&command, "command", "", "The command to use [listClusters, listServices, listTasks, updateService, listEc2Instances, listLoadBalancers, ssh, scp]")
+	flag.StringVar(&command, "command", "", "The command to use [help, listClusters, listServices, listTasks, updateService, listEc2Instances, listLoadBalancers, ssh, scp]")
 	flag.StringVar(&cluster, "cluster", "", "Specify cluster to use")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
@@ -31,6 +32,39 @@ func init() {
 	flag.StringVar(&credentialsFile, "credentials", "", "Specify credentials used for accessing AWS. Should be of format: .aws/credentials")
 	flag.StringVar(&awsKey, "awsKey", "", "AWS key used for authentication. Overrides credentials file")
 	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
+}
+
+func printCommandHelp() {
+	var m = map[string]string {
+		"help" : "Prints this help.",
+		"listClusters" : "List available clusters.",
+		"listServices" : "List available services. Needs -cluster flag.",
+		"listTasks" : "List tasks for a service. Needs -cluster, -service flags.",
+		"updateService" : "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
+		"listEc2Instances" : "List available EC2 instances.",
+		"listLoadBalancers" : "List available Load Balancers and their contained EC2 instances.",
+		"ssh" : "Executes a command over SSH for the specified service. Needs -serviceName or -serviceId flags.",
+		"scp" : "Copies files from the specified instance(s). Needs -serviceName or -ServiceId, -target and optionally -recursive flags.\n                      Example: -command scp -serviceName writer -target Documents -recursive /var/log/writer",
+	}
+
+	k := sortKeys(m)
+
+	for _, v := range k {
+		fmt.Print(v);
+		for j := 0; j < 20-(len([]rune(v))); j++ {
+			fmt.Print(" ")
+		}
+		fmt.Println(m[v])
+	}
+}
+
+func sortKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func errUsage(message string) {
@@ -178,7 +212,9 @@ func main() {
 		} else if instanceName != "" {
 			ips := GetInstancesForName(instanceName)
 			if (len(ips) == 1) {
+				fmt.Printf("[%s] ... ", *ips[0].InstanceId)
 				Scp(ips[0], sshPem, flag.Args())
+				fmt.Println("done")
 			} else {
 				for i := 0; i < len(ips); i++ {
 					fmt.Printf("[%s] ... ", *ips[i].InstanceId)
@@ -189,6 +225,8 @@ func main() {
 		} else {
 			errUsage("Either instanceId or instanceName parameter has to be specified")
 		}
+	case "help":
+		printCommandHelp()
 	default:
 		errUsage("Unknown command: " + command)
 	}

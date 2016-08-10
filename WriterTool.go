@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey string
+var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey, version string
 var recursive bool
 var region = "eu-west-1"
 var auth *Auth
@@ -32,6 +32,7 @@ func init() {
 	flag.StringVar(&credentialsFile, "credentials", "", "Specify credentials used for accessing AWS. Should be of format: .aws/credentials")
 	flag.StringVar(&awsKey, "awsKey", "", "AWS key used for authentication. Overrides credentials file")
 	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
+	flag.StringVar(&version, "version", "", "The version to use for docker image in the task definition")
 }
 
 func printCommandHelp() {
@@ -41,6 +42,7 @@ func printCommandHelp() {
 		"listServices" : "List available services. Needs -cluster flag.",
 		"listTasks" : "List tasks for a service. Needs -cluster, -service flags.",
 		"updateService" : "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
+		"releaseService" : "Creates a new release for the service. Neews -cluster, -service, -version flags.",
 		"listEc2Instances" : "List available EC2 instances.",
 		"listLoadBalancers" : "List available Load Balancers and their contained EC2 instances.",
 		"ssh" : "Executes a command over SSH for the specified service. Needs -serviceName or -serviceId flags.",
@@ -112,6 +114,14 @@ func _getServiceArn() string {
 	return serviceArn
 }
 
+func _getVersion() string {
+	if (version == "") {
+		errUsage("You must specify a version with: -version")
+	}
+
+	return version;
+}
+
 func getAwsCredentials(filepath string) (awsAccessKeyId, awsSecretKey string) {
 	var awsAccessKeyIdRegexp = regexp.MustCompile("aws_access_key_id\\s*=\\s*(.*)")
 	var awsSecretKeyRegexp = regexp.MustCompile("aws_secret_access_key\\s*=\\s*(.*)")
@@ -178,6 +188,11 @@ func main() {
 		clusterArn := _getClusterArn()
 		serviceArn := _getServiceArn()
 		UpdateService(clusterArn, serviceArn)
+	case "releaseService":
+		clusterArn := _getClusterArn()
+		serviceArn := _getServiceArn()
+		version := _getVersion()
+		ReleaseService(clusterArn, serviceArn, version)
 	case "listEc2Instances":
 		ListEc2Instances()
 	case "listLoadBalancers":

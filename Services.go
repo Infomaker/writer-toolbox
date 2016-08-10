@@ -23,6 +23,18 @@ func ExtractName(a *string) string {
 	return res[0][1]
 }
 
+func ExtractVersion(a string) (string, string) {
+	re := regexp.MustCompile("(.*?)\\:(.+)")
+
+	res := re.FindAllStringSubmatch(a, -1);
+
+	if (res == nil) {
+		return "", ""
+	}
+
+	return res[0][2], res[0][1]
+}
+
 func _listServices(cluster string) *ecs.ListServicesOutput {
 	svc := ecs.New(session.New(), _getAwsConfig())
 
@@ -92,6 +104,43 @@ func _describeTasks(clusterArn string, tasks []*string) *ecs.DescribeTasksOutput
 	return result
 }
 
+func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput) string {
+	svc := ecs.New(session.New(), _getAwsConfig())
+
+	params := &ecs.RegisterTaskDefinitionInput{
+		ContainerDefinitions : taskDefinition.TaskDefinition.ContainerDefinitions,
+		Family: taskDefinition.TaskDefinition.Family,
+		Volumes: taskDefinition.TaskDefinition.Volumes,
+	}
+
+	registrationResult, err := svc.RegisterTaskDefinition(params)
+
+	if (err != nil) {
+		errState(err.Error())
+	}
+
+	taskDefinitionArn := registrationResult.TaskDefinition.TaskDefinitionArn;
+
+	return *taskDefinitionArn
+}
+
+func _updateService(newTaskDefinitionArn string, service *ecs.DescribeServicesOutput) {
+	svc := ecs.New(session.New(), _getAwsConfig())
+
+	params := &ecs.UpdateServiceInput{
+		Cluster: aws.String(*service.Services[0].ClusterArn),
+		DesiredCount: aws.Int64(*service.Services[0].DesiredCount),
+		Service: aws.String(*service.Services[0].ServiceArn),
+		TaskDefinition: aws.String(newTaskDefinitionArn),
+	}
+
+	_, err := svc.UpdateService(params)
+
+	if (err != nil) {
+		errState(err.Error())
+	}
+}
+
 func ListServices(clusterArn string) {
 
 	resp := _listServices(clusterArn)
@@ -109,7 +158,7 @@ func ListTasks(clusterArn, serviceArn string) {
 	}
 }
 
-func UpdateService(clusterArn string, serviceArn string) {
+func UpdateService(clusterArn, serviceArn string) {
 	tasks := _listTasks(clusterArn, serviceArn)
 	service := _describeService(clusterArn, serviceArn)
 
@@ -128,6 +177,60 @@ func UpdateService(clusterArn string, serviceArn string) {
 	}
 
 	fmt.Printf("Service [%s] is updated\n", *service.Services[0].ServiceName)
+}
+
+func ReleaseService(clusterArn, serviceArn, version string) {
+	service := _describeService(clusterArn, serviceArn);
+
+	taskDefinitionName := *service.Services[0].TaskDefinition
+	taskDefinition := _describeTaskDefinition(taskDefinitionName)
+	dockerImage := *taskDefinition.TaskDefinition.ContainerDefinitions[0].Image
+	currentVersion, imagePart := ExtractVersion(dockerImage)
+
+	fmt.Printf("Service            [%s]\n", *service.Services[0].ServiceName);
+	fmt.Printf("Task definition    [%s]\n", taskDefinitionName);
+	fmt.Printf("Docker image       [%s]\n", imagePart)
+	fmt.Printf("Version            [%s]\n", currentVersion);
+
+	if (version == currentVersion) {
+		errUsage("Specified version is already deployed!");
+	}
+
+	minimumHealthyPercentage := *service.Services[0].DeploymentConfiguration.MinimumHealthyPercent
+	desiredCount := *service.Services[0].DesiredCount
+	minimumHealthyCount := desiredCount * minimumHealthyPercentage / 100
+
+	fmt.Printf("HealthyPercentage [%d], DesiredCount [%d] -> Number of running instances during deployment [%d] ... ", minimumHealthyPercentage, desiredCount, minimumHealthyCount)
+
+	if (desiredCount - minimumHealthyCount == 0) {
+		errUsage("Not possible to deploy because of too high healthy percentage")
+	}
+
+	fmt.Println("OK")
+
+	*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image = imagePart + ":" + version
+
+	fmt.Println(*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image)
+
+	newTaskDefinitionArn := _createTaskDefinition(taskDefinition)
+
+	_updateService(newTaskDefinitionArn, service)
+}
+
+func _describeTaskDefinition(taskDefinitionName string) *ecs.DescribeTaskDefinitionOutput {
+	svc := ecs.New(session.New(), _getAwsConfig())
+
+	params := &ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String(taskDefinitionName),
+	}
+
+	result, err := svc.DescribeTaskDefinition(params)
+
+	if (err != nil) {
+		errState(err.Error())
+	}
+
+	return result
 }
 
 func _stopTask(cluster, taskArn string) {
@@ -157,7 +260,7 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 		currentTasks := _listTasks(cluster, service)
 		if (len(currentTasks.TaskArns) < len(tasks) || len(currentTasks.TaskArns) == 0) {
 			fmt.Print(".")
-		} else if (newTask == ""){
+		} else if (newTask == "") {
 			newTask = _findNewTask(tasks, currentTasks.TaskArns)
 			if (newTask == "") {
 				errState("No new task found among tasks")

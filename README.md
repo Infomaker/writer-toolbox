@@ -21,3 +21,4 @@ writer-tool -h
   1.4      Added describeService command, verbosity (-v and -vv flags). Added command completions
   1.4.1    Added licence
   1.4.2    README fixes
+  1.4.3    Preparing for homebrew installation

@@ -11,12 +11,13 @@ import (
 )
 
 var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey, version string
-var recursive bool
+var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
+var verboseLevel = 0
 
 type Auth struct {
-	key string `toml:"aws_access_key_id"`
+	key    string `toml:"aws_access_key_id"`
 	secret string `toml:"aws_secret_access_key"`
 }
 
@@ -33,14 +34,17 @@ func init() {
 	flag.StringVar(&awsKey, "awsKey", "", "AWS key used for authentication. Overrides credentials file")
 	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
 	flag.StringVar(&version, "version", "", "The version to use for docker image in the task definition")
+	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
+	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 }
 
 func printCommandHelp() {
-	var m = map[string]string {
+	var m = map[string]string{
 		"help" : "Prints this help.",
 		"listClusters" : "List available clusters.",
 		"listServices" : "List available services. Needs -cluster flag.",
 		"listTasks" : "List tasks for a service. Needs -cluster, -service flags.",
+		"describeService" : "Describes the service. Needs -cluster, -service flags. Optionaly -v and -vv may be used.",
 		"updateService" : "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
 		"releaseService" : "Creates a new release for the service. Neews -cluster, -service, -version flags.",
 		"listEc2Instances" : "List available EC2 instances.",
@@ -53,11 +57,12 @@ func printCommandHelp() {
 
 	for _, v := range k {
 		fmt.Print(v);
-		for j := 0; j < 20-(len([]rune(v))); j++ {
+		for j := 0; j < 20 - (len([]rune(v))); j++ {
 			fmt.Print(" ")
 		}
 		fmt.Println(m[v])
 	}
+
 }
 
 func sortKeys(m map[string]string) []string {
@@ -83,7 +88,6 @@ func errStatef(message string, a ...interface{}) {
 	fmt.Printf(message, a)
 	os.Exit(2)
 }
-
 
 func _getClusterArn() string {
 	if (cluster == "") {
@@ -152,6 +156,13 @@ func getAwsCredentials(filepath string) (awsAccessKeyId, awsSecretKey string) {
 func main() {
 	flag.Parse()
 
+	if (verbose) {
+		verboseLevel = 1
+	}
+	if (moreVerbose) {
+		verboseLevel = 2
+	}
+
 	if (command == "") {
 		flag.PrintDefaults();
 		return
@@ -184,6 +195,10 @@ func main() {
 		clusterArn := _getClusterArn()
 		serviceArn := _getServiceArn()
 		ListTasks(clusterArn, serviceArn)
+	case "describeService":
+		clusterArn := _getClusterArn()
+		serviceArn := _getServiceArn()
+		DescribeService(clusterArn, serviceArn)
 	case "updateService":
 		clusterArn := _getClusterArn()
 		serviceArn := _getServiceArn()

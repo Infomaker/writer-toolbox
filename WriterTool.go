@@ -22,7 +22,7 @@ type Auth struct {
 }
 
 func init() {
-	flag.StringVar(&command, "command", "", "The command to use [help, listClusters, listServices, listTasks, updateService, listEc2Instances, listLoadBalancers, ssh, scp]")
+	flag.StringVar(&command, "command", "", "The command to use. The command 'help' displays available commands.")
 	flag.StringVar(&cluster, "cluster", "", "Specify cluster to use")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")

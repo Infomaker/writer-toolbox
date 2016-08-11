@@ -179,6 +179,23 @@ func UpdateService(clusterArn, serviceArn string) {
 	fmt.Printf("Service [%s] is updated\n", *service.Services[0].ServiceName)
 }
 
+func DescribeService(clusterArn, serviceArn string) {
+
+	service := _describeService(clusterArn, serviceArn)
+
+	item := service.Services[0]
+	fmt.Printf("Name [%s], Running: %d, Pending: %d, Desired: %d\n", *item.ServiceName, *item.RunningCount, *item.PendingCount, *item.DesiredCount)
+
+	if (verboseLevel == 1) {
+		fmt.Printf("Task definition [%s], MaximumPercent: %d, MinimumHealthyPercent: %d\n", *item.TaskDefinition, *item.DeploymentConfiguration.MaximumPercent, *item.DeploymentConfiguration.MinimumHealthyPercent)
+	}
+
+	if (verboseLevel == 2) {
+		definition := _describeTaskDefinition(*service.Services[0].TaskDefinition)
+		fmt.Println(definition);
+	}
+}
+
 func ReleaseService(clusterArn, serviceArn, version string) {
 	service := _describeService(clusterArn, serviceArn);
 

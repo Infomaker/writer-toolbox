@@ -20,3 +20,4 @@ writer-tool -h
   1.3      Added releaseService command
   1.4      Added describeService command, verbosity (-v and -vv flags). Added command completions
   1.4.1    Added licence
+  1.4.2    README fixes

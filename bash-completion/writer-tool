@@ -1,0 +1,108 @@
+# writer-tool(1) complete
+
+have writer-tool && {
+
+_regex()
+{
+    local regex line command expand
+    command=$1
+    expand=$2
+    regex="-${command}"'[[:space:]]+([^[:space:]]+)+'
+    line="${COMP_LINE}"
+    if [[ $line =~ $regex ]]; then
+        if [[ -z $expand ]]; then
+            echo "-$1 ${BASH_REMATCH[1]}"
+        else
+            echo "-$1 $(_expandPath ${BASH_REMATCH[1]})"
+        fi
+        return 0
+    fi
+
+    echo ""
+    return 0
+}
+
+_tool()
+{
+echo "writer-tool $(_regex credentials expand) $(_regex awsKey) $(_regex awsSecretKey)"
+
+}
+
+_expandPath() {
+  case $1 in
+    ~[+-]*)
+      local content content_q
+      printf -v content_q '%q' "${1:2}"
+      eval "content=${1:0:2}${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    ~*)
+      local content content_q
+      printf -v content_q '%q' "${1:1}"
+      eval "content=~${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    *)
+      printf '%s\n' "$1"
+      ;;
+  esac
+}
+
+_writer-tool()
+{
+    local cur prev opts line
+
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    line="${COMP_LINE}"
+    opts="-awsKey -awsSecretKey -cluster -command -credentials -instanceId -instanceName -output -pemfile -recursive -service -target -version -v -vv"
+
+    case "${prev}" in
+        -cluster)
+            local clusters=$(for x in `$(_tool) -command listClusters`; do echo ${x} ; done )
+            COMPREPLY=( $(compgen -W "${clusters}" -- ${cur}) )
+            return 0
+            ;;
+        -service)
+            local names=$( $(_tool) $(_regex cluster) -command listServices)
+            COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
+            return 0
+            ;;
+        -command)
+            local commands="help listClusters listEc2Instances listLoadBalancers listServices listTasks describeService releaseService updateService scp ssh"
+            COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
+            return 0
+            ;;
+        -instanceId)
+            local names=$( $(_tool) -command listEc2Instances)
+            COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
+            return 0
+            ;;
+        -instanceName)
+            local names=$( $(_tool) -command listEc2Instances -v)
+            COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
+            return 0
+            ;;
+        -credentials)
+            _filedir
+            ;;
+        -target)
+            _filedir
+            ;;
+        -pemfile)
+            _filedir
+            ;;
+        *)
+        ;;
+    esac
+
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    fi
+
+    _filedir
+}
+complete -F _writer-tool writer-tool
+}

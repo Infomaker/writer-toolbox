@@ -12,7 +12,7 @@ import (
 )
 
 func ExtractName(a *string) string {
-	re := regexp.MustCompile("\\w+:\\w+:\\w+:[\\w-]+:\\d+:\\w+\\/(.+)")
+	re := regexp.MustCompile("\\w+:\\w+:\\w+:[\\w-]+:\\d+:[^/]+\\/(.+)")
 
 	res := re.FindAllStringSubmatch(*a, -1);
 
@@ -162,6 +162,10 @@ func UpdateService(clusterArn, serviceArn string) {
 	tasks := _listTasks(clusterArn, serviceArn)
 	service := _describeService(clusterArn, serviceArn)
 
+	if (len(service.Services) > 1) {
+		errState("No support for multiple services.");
+	}
+
 	desiredCount := *service.Services[0].DesiredCount
 
 	if len(tasks.TaskArns) < int(desiredCount) {
@@ -183,21 +187,32 @@ func DescribeService(clusterArn, serviceArn string) {
 
 	service := _describeService(clusterArn, serviceArn)
 
-	item := service.Services[0]
-	fmt.Printf("Name [%s], Running: %d, Pending: %d, Desired: %d\n", *item.ServiceName, *item.RunningCount, *item.PendingCount, *item.DesiredCount)
+	for n := 0; n < len(service.Services); n++ {
+		item := service.Services[n]
 
-	if (verboseLevel == 1) {
-		fmt.Printf("Task definition [%s], MaximumPercent: %d, MinimumHealthyPercent: %d\n", *item.TaskDefinition, *item.DeploymentConfiguration.MaximumPercent, *item.DeploymentConfiguration.MinimumHealthyPercent)
-	}
+		fmt.Printf("Service name [%s], Running: %d, Pending: %d, Desired: %d\n", *item.ServiceName, *item.RunningCount, *item.PendingCount, *item.DesiredCount)
 
-	if (verboseLevel == 2) {
-		definition := _describeTaskDefinition(*service.Services[0].TaskDefinition)
-		fmt.Println(definition);
+		if (verboseLevel == 1) {
+			for i := 0; i < len(item.Deployments); i++ {
+				deployment := item.Deployments[i]
+				fmt.Printf("   %s (%s), running: %d, Pending: %d: Desired: %d\n", ExtractName(deployment.TaskDefinition), *deployment.Status, *deployment.RunningCount, *deployment.PendingCount, *deployment.DesiredCount)
+			}
+		}
+
+		if (verboseLevel == 2) {
+			fmt.Printf("Deployment configuration -> MaximumPercent: %d, MinimumHealthyPercent: %d\n", *item.DeploymentConfiguration.MaximumPercent, *item.DeploymentConfiguration.MinimumHealthyPercent)
+			definition := _describeTaskDefinition(*item.TaskDefinition)
+			fmt.Println(definition);
+		}
 	}
 }
 
 func ReleaseService(clusterArn, serviceArn, version string) {
 	service := _describeService(clusterArn, serviceArn);
+
+	if (len(service.Services) > 1) {
+		errState("No support for multiple services.");
+	}
 
 	taskDefinitionName := *service.Services[0].TaskDefinition
 	taskDefinition := _describeTaskDefinition(taskDefinitionName)

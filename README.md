@@ -22,3 +22,4 @@ writer-tool -h
   1.4.1    Added licence
   1.4.2    README fixes
   1.4.3    Preparing for homebrew installation
+  1.4.4    Deployment config is displayed for describeService when using -v. Preventing releaseService and updateService if service count > 1

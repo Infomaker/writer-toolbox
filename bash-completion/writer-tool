@@ -56,7 +56,7 @@ _writer-tool()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     line="${COMP_LINE}"
-    opts="-awsKey -awsSecretKey -cluster -command -credentials -instanceId -instanceName -output -pemfile -recursive -service -target -version -v -vv"
+    opts="-awsKey -awsSecretKey -cluster -command -credentials -instanceId -instanceName -loadBalancer -output -pemfile -recursive -service -target -version -v -vv"
 
     case "${prev}" in
         -cluster)

@@ -51,22 +51,22 @@ func printCommandHelp() {
 		"listEc2Instances" : "List available EC2 instances.",
 		"listLoadBalancers" : "List available Load Balancers and their contained EC2 instances.",
 		"getEntity" : "Gets an entity from the writer load balancer\n" +
-			"                      -loadBalancer : The load balancer fronting the writer instances    (required)\n" +
-			"                      {entityId}    : The ID of the entity to fetch    (required)\n",
+			"                         -loadBalancer : The load balancer fronting the writer instances    (required)\n" +
+			"                         {entityId}    : The ID of the entity to fetch    (required)\n" +
+			"                         Example: -command getEntity -loadBalancer writer-loadbalancer a9fbd742-ea87-425d-ae86-045ab3ac91c1",
 		"ssh" : "Executes a command over SSH for the specified service.\n" +
-			"                      -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
-			"                      -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
-			"                      -pemfile      : The SSH pem file used for authentication    (required)\n" +
-			"                      {command}     : The command to execute (e.g. 'ls -l')   (required)\n" +
-			"                      Example: -command ssh -instanceName writer -pemfile ~/.ssh/pem-files/im-dev tail -20 /var/log/writer/writer.log\n",
-
+			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
+			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
+			"                         -pemfile      : The SSH pem file used for authentication    (required)\n" +
+			"                         {command}     : The command to execute (e.g. 'ls -l')   (required)\n" +
+			"                         Example: -command ssh -instanceName writer -pemfile ~/.ssh/pem-files/im-dev tail -20 /var/log/writer/writer.log",
 		"scp" : "Copies files from the specified instance(s). Needs -instanceName or -instanceId, -output and optionally -recursive flags.\n" +
-			"                      -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
-			"                      -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
-			"                      -pemfile      : The SSH pem file used for authentication    (required)\n" +
-			"                      -output       : the target directory   (required)\n" +
-			"                      -recursive    : copies from source recursively\n" +
-			"                      Example: -command scp -instanceName writer -pemfile ~/.ssh/pem-files/im-dev -output Documents -recursive /var/log/writer\n",
+			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
+			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
+			"                         -pemfile      : The SSH pem file used for authentication    (required)\n" +
+			"                         -output       : the target directory   (required)\n" +
+			"                         -recursive    : copies from source recursively\n" +
+			"                         Example: -command scp -instanceName writer -pemfile ~/.ssh/pem-files/im-dev -output Documents -recursive /var/log/writer",
 	}
 
 	k := sortKeys(m)

@@ -70,12 +70,12 @@ _writer-tool()
             return 0
             ;;
         -command)
-            local commands="help listClusters listEc2Instances listLoadBalancers listServices listTasks describeService releaseService updateService scp ssh"
+            local commands="help listClusters listEc2Instances listLoadBalancers listServices listTasks describeService releaseService updateService scp ssh getEntity"
             COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
             return 0
             ;;
         -instanceId)
-            local names=$( $(_tool) -command listEc2Instances)
+            local names=$( $(_tool) -command listEc2Instances )
             COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
             return 0
             ;;
@@ -93,6 +93,11 @@ _writer-tool()
         -pemfile)
             _filedir
             ;;
+        -loadBalancer)
+          local names=$( $(_tool) -command listLoadBalancers )
+          COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
+          return 0
+          ;;
         *)
         ;;
     esac

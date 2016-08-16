@@ -25,3 +25,4 @@ writer-tool -h
   1.4.4    Deployment config is displayed for describeService when using -v. Preventing releaseService and updateService if service count > 1
   1.4.5    Updated -command help
   1.5      Added getEntity command. Added verbosity to listLoadBalancers
+  1.5.1    Added load balancer to list of options for tab completion

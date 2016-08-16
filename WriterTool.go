@@ -49,8 +49,20 @@ func printCommandHelp() {
 		"releaseService" : "Creates a new release for the service. Neews -cluster, -service, -version flags.",
 		"listEc2Instances" : "List available EC2 instances.",
 		"listLoadBalancers" : "List available Load Balancers and their contained EC2 instances.",
-		"ssh" : "Executes a command over SSH for the specified service. Needs -serviceName or -serviceId flags.",
-		"scp" : "Copies files from the specified instance(s). Needs -serviceName or -ServiceId, -target and optionally -recursive flags.\n                      Example: -command scp -serviceName writer -target Documents -recursive /var/log/writer",
+		"ssh" : "Executes a command over SSH for the specified service.\n" +
+			"                      -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
+			"                      -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
+			"                      -pemfile      : The SSH pem file used for authentication    (required)\n" +
+			"                      {command}     : The command to execute (e.g. 'ls -l')   (required)\n" +
+			"                      Example: -command ssh -instanceName writer -pemfile ~/.ssh/pem-files/im-dev tail -20 /var/log/writer/writer.log\n",
+
+		"scp" : "Copies files from the specified instance(s). Needs -instanceName or -instanceId, -output and optionally -recursive flags.\n" +
+			"                      -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
+			"                      -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
+			"                      -pemfile      : The SSH pem file used for authentication    (required)\n" +
+			"                      -output       : the target directory   (required)\n" +
+			"                      -recursive    : copies from source recursively\n" +
+			"                      Example: -command scp -instanceName writer -pemfile ~/.ssh/pem-files/im-dev -output Documents -recursive /var/log/writer\n",
 	}
 
 	k := sortKeys(m)

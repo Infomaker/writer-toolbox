@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey, version string
+var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey, version, loadBalancer string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -34,6 +34,7 @@ func init() {
 	flag.StringVar(&awsKey, "awsKey", "", "AWS key used for authentication. Overrides credentials file")
 	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
 	flag.StringVar(&version, "version", "", "The version to use for docker image in the task definition")
+	flag.StringVar(&loadBalancer, "loadBalancer", "", "Specifies the load balancer name to use")
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 }
@@ -49,6 +50,9 @@ func printCommandHelp() {
 		"releaseService" : "Creates a new release for the service. Neews -cluster, -service, -version flags.",
 		"listEc2Instances" : "List available EC2 instances.",
 		"listLoadBalancers" : "List available Load Balancers and their contained EC2 instances.",
+		"getEntity" : "Gets an entity from the writer load balancer\n" +
+			"                      -loadBalancer : The load balancer fronting the writer instances    (required)\n" +
+			"                      {entityId}    : The ID of the entity to fetch    (required)\n",
 		"ssh" : "Executes a command over SSH for the specified service.\n" +
 			"                      -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
 			"                      -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
@@ -267,6 +271,14 @@ func main() {
 		} else {
 			errUsage("Either instanceId or instanceName parameter has to be specified")
 		}
+	case "getEntity":
+		if loadBalancer == "" {
+			errUsage("loadBalancer must be specified")
+		}
+		if len(flag.Args()) != 1 {
+			errUsage("Entity ID must be provided")
+		}
+		GetEntity(loadBalancer, flag.Args()[0])
 	case "help":
 		printCommandHelp()
 	default:

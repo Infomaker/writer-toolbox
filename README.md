@@ -27,3 +27,4 @@ writer-tool -h
   1.5      Added getEntity command. Added verbosity to listLoadBalancers
   1.5.1    Added load balancer to list of options for tab completion
   1.5.2    Added example for command getEntity
+  1.5.3    Fixing bug where updateService fails with 'No new tasks'. This operation is retried a couple of times before failing now.

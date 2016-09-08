@@ -287,6 +287,7 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 
 	attempts := 60
 	sleepTime := 2
+	newTaskAttempts := 5
 
 	for i := 0; i < attempts; i++ {
 		currentTasks := _listTasks(cluster, service)
@@ -294,11 +295,16 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 			fmt.Print(".")
 		} else if (newTask == "") {
 			newTask = _findNewTask(tasks, currentTasks.TaskArns)
-			if (newTask == "") {
+			newTaskAttempts--;
+
+			if (newTask == "" && newTaskAttempts >= 0) {
+				fmt.Print("?")
+			} else if (newTask != "") {
+				fmt.Println(" done")
+				fmt.Print("  New task: " + newTask + " ")
+			} else {
 				errState("No new task found among tasks")
 			}
-			fmt.Println(" done")
-			fmt.Print("  New task: " + newTask + " ")
 
 		}
 

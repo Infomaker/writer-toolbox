@@ -24,7 +24,7 @@ _regex()
 
 _tool()
 {
-echo "writer-tool $(_regex credentials expand) $(_regex awsKey) $(_regex awsSecretKey)"
+echo "writer-tool $(_regex credentials expand) $(_regex awsKey) $(_regex awsSecretKey) $(_regex p) $(_regex profile)"
 
 }
 

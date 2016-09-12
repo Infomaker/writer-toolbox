@@ -8,9 +8,11 @@ import (
 	"strings"
 	"regexp"
 	"sort"
+	"os/user"
+	"path/filepath"
 )
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, awsKey, awsSecretKey, version, loadBalancer string
+var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile, awsKey, awsSecretKey, version, loadBalancer string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -31,6 +33,8 @@ func init() {
 	flag.BoolVar(&recursive, "recursive", false, "Specify recursive operation")
 	flag.StringVar(&output, "output", "", "Specify output directory")
 	flag.StringVar(&credentialsFile, "credentials", "", "Specify credentials used for accessing AWS. Should be of format: .aws/credentials")
+	flag.StringVar(&profile, "profile", "", "Specify profile for ./aws/credentials file used for accessing AWS.")
+	flag.StringVar(&profile, "p", "", "Specify profile for ./aws/credentials file used for accessing AWS.")
 	flag.StringVar(&awsKey, "awsKey", "", "AWS key used for authentication. Overrides credentials file")
 	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
 	flag.StringVar(&version, "version", "", "The version to use for docker image in the task definition")
@@ -169,6 +173,38 @@ func getAwsCredentials(filepath string) (awsAccessKeyId, awsSecretKey string) {
 	return awsAccessKeyId, awsSecretKey
 }
 
+func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey string) {
+	var awsAccessKeyIdRegexp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id\\s*=\\s*(.*)")
+	var awsSecretKeyRegexp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key\\s*=\\s*(.*)")
+
+	user, err := user.Current()
+	if (err != nil) {
+		errState(err.Error())
+	}
+
+	file, err := ioutil.ReadFile(filepath.Join(user.HomeDir, ".aws", "credentials"));
+	if err != nil {
+		errUsage(err.Error())
+	}
+
+	matches := awsAccessKeyIdRegexp.FindStringSubmatch(string(file))
+	if len(matches) > 1 {
+		awsAccessKeyId = strings.TrimSpace(matches[1])
+	} else {
+		errUsage("Could not find aws access key id")
+	}
+
+	matches = awsSecretKeyRegexp.FindStringSubmatch(string(file))
+
+	if len(matches) > 1 {
+		awsSecretKey = strings.TrimSpace(matches[1])
+	} else {
+		errUsage("Could not find aws secret key")
+	}
+
+	return awsAccessKeyId, awsSecretKey
+}
+
 func main() {
 	flag.Parse()
 
@@ -186,6 +222,13 @@ func main() {
 
 	if (credentialsFile != "") {
 		key, secret := getAwsCredentials(credentialsFile)
+		auth = new(Auth)
+		auth.key = key
+		auth.secret = secret
+	}
+
+	if (profile != "") {
+		key, secret := getAwsCredentialsFromProfile(profile)
 		auth = new(Auth)
 		auth.key = key
 		auth.secret = secret

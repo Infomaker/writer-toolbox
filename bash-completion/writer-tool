@@ -48,15 +48,15 @@ _expandPath() {
   esac
 }
 
-_writer-tool()
-{
+
+_writertool() {
     local cur prev opts line
 
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     line="${COMP_LINE}"
-    opts="-awsKey -awsSecretKey -cluster -command -credentials -instanceId -instanceName -loadBalancer -output -pemfile -recursive -service -target -version -v -vv"
+    opts="-awsKey -awsSecretKey -cluster -command -credentials -instanceId -instanceName -loadBalancer -output -p -pemfile -profile -recursive -service -target -version -v -vv"
 
     case "${prev}" in
         -cluster)
@@ -93,11 +93,21 @@ _writer-tool()
         -pemfile)
             _filedir
             ;;
+        -p)
+            local list=$(cat ${HOME}/.aws/credentials | grep \\[ | sed 's/\[//g' | sed 's/\]//g')
+            COMPREPLY=( $(compgen -W  "${list}" -- ${cur}) )
+            return 0;
+            ;;
+        -profile)
+            local list=$(cat ${HOME}/.aws/credentials | grep \\[ | sed 's/\[//g' | sed 's/\]//g')
+            COMPREPLY=( $(compgen -W  "${list}" -- ${cur}) )
+            return 0;
+            ;;
         -loadBalancer)
-          local names=$( $(_tool) -command listLoadBalancers )
-          COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
-          return 0
-          ;;
+            local names=$( $(_tool) -command listLoadBalancers )
+            COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
+            return 0
+            ;;
         *)
         ;;
     esac
@@ -109,5 +119,5 @@ _writer-tool()
 
     _filedir
 }
-complete -F _writer-tool writer-tool
+complete -F _writertool writer-tool
 }

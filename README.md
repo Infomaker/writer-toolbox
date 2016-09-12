@@ -28,3 +28,4 @@ writer-tool -h
   1.5.1    Added load balancer to list of options for tab completion
   1.5.2    Added example for command getEntity
   1.5.3    Fixing bug where updateService fails with 'No new tasks'. This operation is retried a couple of times before failing now.
+  1.6      Added profile parameter, which specifies a profile in the ~/.aws/credentials file to use as credentials

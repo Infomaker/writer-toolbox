@@ -3,27 +3,26 @@ package main
 import (
 	"regexp"
 
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"fmt"
 	"os"
 )
 
 func ClusterName(a *string) string {
 	re := regexp.MustCompile("\\w+:\\w+:\\w+:[\\w-]+:\\d+:\\w+\\/(.+)")
 
-	res := re.FindAllStringSubmatch(*a, -1);
+	res := re.FindAllStringSubmatch(*a, -1)
 
 	if res == nil {
-		return "No match for " + *a;
+		return "No match for " + *a
 	}
 
 	return res[0][1]
 }
 
-
-func _listClusters() (*ecs.ListClustersOutput) {
+func _listClusters() *ecs.ListClustersOutput {
 	svc := ecs.New(session.New(), _getAwsConfig())
 
 	params := &ecs.ListClustersInput{
@@ -31,16 +30,16 @@ func _listClusters() (*ecs.ListClustersOutput) {
 	}
 
 	resp, err := svc.ListClusters(params)
-	if (err != nil) {
+	if err != nil {
 		if err != nil {
 			// Print the error, cast err to awserr.Error to get the Code and
 			// Message from an error.
 			fmt.Println(err.Error())
-			os.Exit(1);
+			os.Exit(1)
 		}
 	}
 
-	return resp;
+	return resp
 }
 
 func ListClusters() {
@@ -53,14 +52,14 @@ func ListClusters() {
 }
 
 func GetClusterArn(name string) string {
-	clusterArns := _listClusters();
+	clusterArns := _listClusters()
 
 	for i := 0; i < len(clusterArns.ClusterArns); i++ {
-		arn := clusterArns.ClusterArns[i];
-		if (ClusterName(arn) == name) {
-			return *arn;
+		arn := clusterArns.ClusterArns[i]
+		if ClusterName(arn) == name {
+			return *arn
 		}
 	}
 
-	return "";
+	return ""
 }

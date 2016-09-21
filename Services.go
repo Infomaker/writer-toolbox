@@ -3,10 +3,10 @@ package main
 import (
 	"regexp"
 
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"fmt"
 	"os"
 	"time"
 )
@@ -14,10 +14,10 @@ import (
 func ExtractName(a *string) string {
 	re := regexp.MustCompile("\\w+:\\w+:\\w+:[\\w-]+:\\d+:[^/]+\\/(.+)")
 
-	res := re.FindAllStringSubmatch(*a, -1);
+	res := re.FindAllStringSubmatch(*a, -1)
 
 	if res == nil {
-		return "No match for " + *a;
+		return "No match for " + *a
 	}
 
 	return res[0][1]
@@ -26,9 +26,9 @@ func ExtractName(a *string) string {
 func ExtractVersion(a string) (string, string) {
 	re := regexp.MustCompile("(.*?)\\:(.+)")
 
-	res := re.FindAllStringSubmatch(a, -1);
+	res := re.FindAllStringSubmatch(a, -1)
 
-	if (res == nil) {
+	if res == nil {
 		return "", ""
 	}
 
@@ -39,7 +39,7 @@ func _listServices(cluster string) *ecs.ListServicesOutput {
 	svc := ecs.New(session.New(), _getAwsConfig())
 
 	params := &ecs.ListServicesInput{
-		Cluster: aws.String(cluster),
+		Cluster:    aws.String(cluster),
 		MaxResults: aws.Int64(10),
 	}
 
@@ -48,22 +48,22 @@ func _listServices(cluster string) *ecs.ListServicesOutput {
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		fmt.Println(err.Error())
-		os.Exit(1);
+		os.Exit(1)
 	}
 
-	return resp;
+	return resp
 }
 
 func _listTasks(cluster, service string) *ecs.ListTasksOutput {
 	svc := ecs.New(session.New(), _getAwsConfig())
 
 	params := &ecs.ListTasksInput{
-		Cluster: aws.String(cluster),
+		Cluster:     aws.String(cluster),
 		ServiceName: aws.String(service),
 	}
 
 	resp, err := svc.ListTasks(params)
-	if (err != nil) {
+	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
@@ -71,20 +71,20 @@ func _listTasks(cluster, service string) *ecs.ListTasksOutput {
 	return resp
 }
 
-func _describeService(clusterArn, serviceArn string) (*ecs.DescribeServicesOutput) {
+func _describeService(clusterArn, serviceArn string) *ecs.DescribeServicesOutput {
 	svc := ecs.New(session.New(), _getAwsConfig())
 
 	params := &ecs.DescribeServicesInput{
-		Cluster: aws.String(clusterArn),
+		Cluster:  aws.String(clusterArn),
 		Services: []*string{aws.String(serviceArn)},
 	}
 
 	result, err := svc.DescribeServices(params)
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 
-	return result;
+	return result
 }
 
 func _describeTasks(clusterArn string, tasks []*string) *ecs.DescribeTasksOutput {
@@ -92,12 +92,12 @@ func _describeTasks(clusterArn string, tasks []*string) *ecs.DescribeTasksOutput
 
 	params := &ecs.DescribeTasksInput{
 		Cluster: aws.String(clusterArn),
-		Tasks: tasks,
+		Tasks:   tasks,
 	}
 
 	result, err := svc.DescribeTasks(params)
 
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 
@@ -108,18 +108,18 @@ func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput) str
 	svc := ecs.New(session.New(), _getAwsConfig())
 
 	params := &ecs.RegisterTaskDefinitionInput{
-		ContainerDefinitions : taskDefinition.TaskDefinition.ContainerDefinitions,
-		Family: taskDefinition.TaskDefinition.Family,
-		Volumes: taskDefinition.TaskDefinition.Volumes,
+		ContainerDefinitions: taskDefinition.TaskDefinition.ContainerDefinitions,
+		Family:               taskDefinition.TaskDefinition.Family,
+		Volumes:              taskDefinition.TaskDefinition.Volumes,
 	}
 
 	registrationResult, err := svc.RegisterTaskDefinition(params)
 
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 
-	taskDefinitionArn := registrationResult.TaskDefinition.TaskDefinitionArn;
+	taskDefinitionArn := registrationResult.TaskDefinition.TaskDefinitionArn
 
 	return *taskDefinitionArn
 }
@@ -128,15 +128,15 @@ func _updateService(newTaskDefinitionArn string, service *ecs.DescribeServicesOu
 	svc := ecs.New(session.New(), _getAwsConfig())
 
 	params := &ecs.UpdateServiceInput{
-		Cluster: aws.String(*service.Services[0].ClusterArn),
-		DesiredCount: aws.Int64(*service.Services[0].DesiredCount),
-		Service: aws.String(*service.Services[0].ServiceArn),
+		Cluster:        aws.String(*service.Services[0].ClusterArn),
+		DesiredCount:   aws.Int64(*service.Services[0].DesiredCount),
+		Service:        aws.String(*service.Services[0].ServiceArn),
 		TaskDefinition: aws.String(newTaskDefinitionArn),
 	}
 
 	_, err := svc.UpdateService(params)
 
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 }
@@ -162,8 +162,8 @@ func UpdateService(clusterArn, serviceArn string) {
 	tasks := _listTasks(clusterArn, serviceArn)
 	service := _describeService(clusterArn, serviceArn)
 
-	if (len(service.Services) > 1) {
-		errState("No support for multiple services.");
+	if len(service.Services) > 1 {
+		errState("No support for multiple services.")
 	}
 
 	desiredCount := *service.Services[0].DesiredCount
@@ -192,26 +192,26 @@ func DescribeService(clusterArn, serviceArn string) {
 
 		fmt.Printf("Service name [%s], Running: %d, Pending: %d, Desired: %d\n", *item.ServiceName, *item.RunningCount, *item.PendingCount, *item.DesiredCount)
 
-		if (verboseLevel == 1) {
+		if verboseLevel == 1 {
 			for i := 0; i < len(item.Deployments); i++ {
 				deployment := item.Deployments[i]
 				fmt.Printf("   %s (%s), running: %d, Pending: %d: Desired: %d\n", ExtractName(deployment.TaskDefinition), *deployment.Status, *deployment.RunningCount, *deployment.PendingCount, *deployment.DesiredCount)
 			}
 		}
 
-		if (verboseLevel == 2) {
+		if verboseLevel == 2 {
 			fmt.Printf("Deployment configuration -> MaximumPercent: %d, MinimumHealthyPercent: %d\n", *item.DeploymentConfiguration.MaximumPercent, *item.DeploymentConfiguration.MinimumHealthyPercent)
 			definition := _describeTaskDefinition(*item.TaskDefinition)
-			fmt.Println(definition);
+			fmt.Println(definition)
 		}
 	}
 }
 
 func ReleaseService(clusterArn, serviceArn, version string) {
-	service := _describeService(clusterArn, serviceArn);
+	service := _describeService(clusterArn, serviceArn)
 
-	if (len(service.Services) > 1) {
-		errState("No support for multiple services.");
+	if len(service.Services) > 1 {
+		errState("No support for multiple services.")
 	}
 
 	taskDefinitionName := *service.Services[0].TaskDefinition
@@ -219,13 +219,13 @@ func ReleaseService(clusterArn, serviceArn, version string) {
 	dockerImage := *taskDefinition.TaskDefinition.ContainerDefinitions[0].Image
 	currentVersion, imagePart := ExtractVersion(dockerImage)
 
-	fmt.Printf("Service            [%s]\n", *service.Services[0].ServiceName);
-	fmt.Printf("Task definition    [%s]\n", taskDefinitionName);
+	fmt.Printf("Service            [%s]\n", *service.Services[0].ServiceName)
+	fmt.Printf("Task definition    [%s]\n", taskDefinitionName)
 	fmt.Printf("Docker image       [%s]\n", imagePart)
-	fmt.Printf("Version            [%s]\n", currentVersion);
+	fmt.Printf("Version            [%s]\n", currentVersion)
 
-	if (version == currentVersion) {
-		errUsage("Specified version is already deployed!");
+	if version == currentVersion {
+		errUsage("Specified version is already deployed!")
 	}
 
 	minimumHealthyPercentage := *service.Services[0].DeploymentConfiguration.MinimumHealthyPercent
@@ -234,7 +234,7 @@ func ReleaseService(clusterArn, serviceArn, version string) {
 
 	fmt.Printf("HealthyPercentage [%d], DesiredCount [%d] -> Number of running instances during deployment [%d] ... ", minimumHealthyPercentage, desiredCount, minimumHealthyCount)
 
-	if (desiredCount - minimumHealthyCount == 0) {
+	if desiredCount-minimumHealthyCount == 0 {
 		errUsage("Not possible to deploy because of too high healthy percentage")
 	}
 
@@ -258,7 +258,7 @@ func _describeTaskDefinition(taskDefinitionName string) *ecs.DescribeTaskDefinit
 
 	result, err := svc.DescribeTaskDefinition(params)
 
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 
@@ -270,13 +270,13 @@ func _stopTask(cluster, taskArn string) {
 
 	params := &ecs.StopTaskInput{
 		Cluster: aws.String(cluster),
-		Reason: aws.String("Stopped by WriterTool"),
-		Task: aws.String(taskArn),
+		Reason:  aws.String("Stopped by WriterTool"),
+		Task:    aws.String(taskArn),
 	}
 
 	_, err := svc.StopTask(params)
 
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 }
@@ -291,15 +291,15 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 
 	for i := 0; i < attempts; i++ {
 		currentTasks := _listTasks(cluster, service)
-		if (len(currentTasks.TaskArns) < len(tasks) || len(currentTasks.TaskArns) == 0) {
+		if len(currentTasks.TaskArns) < len(tasks) || len(currentTasks.TaskArns) == 0 {
 			fmt.Print(".")
-		} else if (newTask == "") {
+		} else if newTask == "" {
 			newTask = _findNewTask(tasks, currentTasks.TaskArns)
-			newTaskAttempts--;
+			newTaskAttempts--
 
-			if (newTask == "" && newTaskAttempts >= 0) {
+			if newTask == "" && newTaskAttempts >= 0 {
 				fmt.Print("?")
-			} else if (newTask != "") {
+			} else if newTask != "" {
 				fmt.Println(" done")
 				fmt.Print("  New task: " + newTask + " ")
 			} else {
@@ -308,12 +308,12 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 
 		}
 
-		if (newTask != "") {
+		if newTask != "" {
 			taskStates := _describeTasks(cluster, []*string{aws.String(newTask)})
-			if (*taskStates.Tasks[0].LastStatus == "RUNNING") {
+			if *taskStates.Tasks[0].LastStatus == "RUNNING" {
 				fmt.Println(" done")
 				return
-			} else if (*taskStates.Tasks[0].LastStatus == "STOPPED") {
+			} else if *taskStates.Tasks[0].LastStatus == "STOPPED" {
 				fmt.Print("X\n")
 				errState("Could not start new task")
 			} else {
@@ -341,14 +341,14 @@ func _findNewTask(tasks, currentTasks []*string) string {
 }
 
 func GetServiceArn(clusterArn, name string) string {
-	clusterArns := _listServices(clusterArn);
+	clusterArns := _listServices(clusterArn)
 
 	for i := 0; i < len(clusterArns.ServiceArns); i++ {
-		arn := clusterArns.ServiceArns[i];
-		if (ExtractName(arn) == name) {
-			return *arn;
+		arn := clusterArns.ServiceArns[i]
+		if ExtractName(arn) == name {
+			return *arn
 		}
 	}
 
-	return "";
+	return ""
 }

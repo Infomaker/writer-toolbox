@@ -285,7 +285,7 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 	fmt.Print("  Waiting for new task ")
 	newTask := ""
 
-	attempts := 120
+	attempts := 240
 	sleepTime := 2
 	newTaskAttempts := 5
 

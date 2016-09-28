@@ -2,8 +2,8 @@
 Tool for managing writer installations
 
 ## How to build
-1. Set $GOPATH variable to your go src directory
-2. Issue: ./build.sh
+    1. Set $GOPATH variable to your go src directory
+    2. Issue: ./build.sh
 
 ## How to use
 
@@ -31,3 +31,4 @@ writer-tool -h
   1.6      Added profile parameter, which specifies a profile in the ~/.aws/credentials file to use as credentials
   1.6.1    Added -p and -profile to bash completion when tool is using itself to get values from AWS
   1.6.2    Extending timeout when waiting for new task
+  1.7      Added command createReport

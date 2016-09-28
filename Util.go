@@ -1,22 +1,20 @@
 package main
 
 import (
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"os"
 	"os/user"
 	"strings"
 	"time"
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 const toolpath = ".writer-tool"
 
-
 func buildPath(pathElement ...string) string {
-	return strings.Join(pathElement[:], "" + string(os.PathSeparator))
+	return strings.Join(pathElement[:], ""+string(os.PathSeparator))
 }
-
 
 func createDirFromToolkitPath(elements ...string) string {
 	user, err := user.Current()
@@ -39,11 +37,10 @@ func createDirFromToolkitPath(elements ...string) string {
 }
 
 func CreateDirUsingServerPathWithDate(server string) string {
-	timestamp := time.Now().Format("20060102-150405");
+	timestamp := time.Now().Format("20060102-150405")
 
-	return createDirFromToolkitPath(server, timestamp);
+	return createDirFromToolkitPath(server, timestamp)
 }
-
 
 func CreateDir(source, target string) string {
 
@@ -56,7 +53,7 @@ func CreateDir(source, target string) string {
 	return path
 }
 
-func GetFileMode(path string) os.FileMode{
+func GetFileMode(path string) os.FileMode {
 	f, err := os.Open(path)
 	if err != nil {
 		errUsage(err.Error())
@@ -70,7 +67,7 @@ func GetFileMode(path string) os.FileMode{
 }
 
 func _getAwsConfig() *aws.Config {
-	if (auth != nil) {
+	if auth != nil {
 		return &aws.Config{Region: aws.String(region), Credentials: credentials.NewStaticCredentials(auth.key, auth.secret, "")}
 	}
 	return &aws.Config{Region: aws.String(region)}

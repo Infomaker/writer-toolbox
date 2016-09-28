@@ -285,7 +285,7 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 	fmt.Print("  Waiting for new task ")
 	newTask := ""
 
-	attempts := 60
+	attempts := 240
 	sleepTime := 2
 	newTaskAttempts := 5
 
@@ -324,7 +324,7 @@ func _waitForNewTask(cluster string, service string, tasks []*string) {
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
 
-	errStatef("Task [%s] did not start in %d attempts", newTask, attempts)
+	errStatef("Task %s did not start in %d seconds", newTask, (attempts * sleepTime))
 
 }
 

@@ -30,3 +30,4 @@ writer-tool -h
   1.5.3    Fixing bug where updateService fails with 'No new tasks'. This operation is retried a couple of times before failing now.
   1.6      Added profile parameter, which specifies a profile in the ~/.aws/credentials file to use as credentials
   1.6.1    Added -p and -profile to bash completion when tool is using itself to get values from AWS
+  1.6.2    Extending timeout when waiting for new task

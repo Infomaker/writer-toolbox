@@ -32,3 +32,4 @@ writer-tool -h
   1.6.1    Added -p and -profile to bash completion when tool is using itself to get values from AWS
   1.6.2    Extending timeout when waiting for new task
   1.7      Added command createReport
+  1.7.1    Extracting image name from docker image in report

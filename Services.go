@@ -23,6 +23,19 @@ func ExtractName(a *string) string {
 	return res[0][1]
 }
 
+func ExtractImageName(a string) string {
+	re := regexp.MustCompile("[^/]+/(.+)")
+
+	res := re.FindAllStringSubmatch(a, -1)
+
+	if res == nil {
+		return "No match for " + a
+	}
+
+	return res[0][1]
+}
+
+
 func ExtractVersion(a string) (string, string) {
 	re := regexp.MustCompile("(.*?)\\:(.+)")
 

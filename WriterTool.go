@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile, awsKey, awsSecretKey, version, loadBalancer string
+var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile, awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -39,6 +39,8 @@ func init() {
 	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
 	flag.StringVar(&version, "version", "", "The version to use for docker image in the task definition")
 	flag.StringVar(&loadBalancer, "loadBalancer", "", "Specifies the load balancer name to use")
+	flag.StringVar(&reportJson, "reportConfig", "", "Filename for the JSON file containing report configuration")
+	flag.StringVar(&reportTemplate, "reportTemplate", "", "Filename for the template that produces the report")
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 }
@@ -46,8 +48,8 @@ func init() {
 func printCommandHelp() {
 	var m = map[string]string{
 		"help":              "Prints this help.",
-		"serviceReport":     "Generates a report of running services",
-		"listClusters":      "List available clusters.",
+		"createReport":     "Generates a report of running services. Needs -reportConfig and -reportTemplate",
+		"listClusters":      "List available clusters. -v will also list services for all clusters",
 		"listServices":      "List available services. Needs -cluster flag.",
 		"listTasks":         "List tasks for a service. Needs -cluster, -service flags.",
 		"describeService":   "Describes the service. Needs -cluster, -service flags. Optionaly -v and -vv may be used.",
@@ -78,7 +80,7 @@ func printCommandHelp() {
 
 	for _, v := range k {
 		fmt.Print(v)
-		for j := 0; j < 20-(len([]rune(v))); j++ {
+		for j := 0; j < 20 - (len([]rune(v))); j++ {
 			fmt.Print(" ")
 		}
 		fmt.Println(m[v])
@@ -108,6 +110,34 @@ func errState(message string) {
 func errStatef(message string, a ...interface{}) {
 	fmt.Printf(message, a)
 	os.Exit(2)
+}
+
+func _readConfigFromFile() []byte {
+	if reportJson == "" {
+		errUsage("You must specify a report config file with: -reportConfig");
+	}
+
+	content, err := ioutil.ReadFile(reportJson)
+
+	if err != nil {
+		errState(err.Error())
+	}
+
+	return content;
+}
+
+func _readTemplateFromFile() string {
+	if reportTemplate == "" {
+		errUsage("You must specify a report template file with: -reportTemplate");
+	}
+
+	content, err := ioutil.ReadFile(reportTemplate)
+
+	if err != nil {
+		errState(err.Error())
+	}
+
+	return string(content);
 }
 
 func _getClusterArn() string {
@@ -246,6 +276,10 @@ func main() {
 	}
 
 	switch command {
+	case "createReport":
+		bytes := _readConfigFromFile();
+		template := _readTemplateFromFile();
+		GenerateReport(bytes, template)
 	case "listClusters":
 		ListClusters()
 	case "listServices":

@@ -47,6 +47,12 @@ func ListClusters() {
 	for i := 0; i < len(resp.ClusterArns); i++ {
 		name := ClusterName(resp.ClusterArns[i])
 		fmt.Println(name)
+		if (verboseLevel > 0) {
+			servicesResp := _listServices(*resp.ClusterArns[i])
+			for j := 0; j < len(servicesResp.ServiceArns); j++ {
+				fmt.Println("  " + ClusterName(servicesResp.ServiceArns[j]))
+			}
+		}
 	}
 
 }

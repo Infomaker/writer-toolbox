@@ -1,22 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"os/exec"
 	"bytes"
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"os"
+	"os/exec"
 )
 
 func Ssh(instance *ec2.Instance, pemFile string, commands []string) {
 	path, err := exec.LookPath("ssh")
-	if (err != nil) {
+	if err != nil {
 		errUsage("Couldn not find binary 'ssh' in path")
 	}
 
 	var arguments []string
 
-	arguments = append(arguments, "-i", pemFile, "ec2-user@" + *instance.PublicIpAddress)
+	arguments = append(arguments, "-i", pemFile, "ec2-user@"+*instance.PublicIpAddress)
 	arguments = append(arguments, commands...)
 
 	doExec(path, arguments, true)
@@ -24,7 +24,7 @@ func Ssh(instance *ec2.Instance, pemFile string, commands []string) {
 
 func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 	path, err := exec.LookPath("scp")
-	if (err != nil) {
+	if err != nil {
 		errUsage("Couldn not find binary 'scp' in path")
 	}
 
@@ -35,15 +35,15 @@ func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 	var arguments []string
 
 	rflag := ""
-	if (recursive) {
+	if recursive {
 		rflag = "-r"
 	}
 
 	name := _getName(instance.Tags) + "-" + *instance.InstanceId
 
-	arguments = append(arguments, "-i", pemFile, rflag, "-p", "ec2-user@" + *instance.PublicIpAddress + ":" + commands[0])
+	arguments = append(arguments, "-i", pemFile, rflag, "-p", "ec2-user@"+*instance.PublicIpAddress+":"+commands[0])
 
-	if (output == "") {
+	if output == "" {
 		arguments = append(arguments, CreateDirUsingServerPathWithDate(name))
 	} else {
 		mode := GetFileMode(output)
@@ -67,7 +67,7 @@ func doExec(path string, arguments []string, doOutput bool) {
 	cmd.Stdout = &out
 	cmd.Stderr = &stdErr
 	errRun := cmd.Run()
-	if (errRun != nil) {
+	if errRun != nil {
 		fmt.Println(stdErr.String())
 		os.Exit(1)
 	}

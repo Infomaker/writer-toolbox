@@ -85,7 +85,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 					deployment := realService.Deployments[l];
 					outputItem := OutputItem{
 						Version: version,
-						Image:image,
+						Image:ExtractImageName(image),
 						TaskDefName:ExtractName(deployment.TaskDefinition),
 						Label:service.Label,
 						RunningCount:*deployment.RunningCount,

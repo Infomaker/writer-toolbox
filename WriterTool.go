@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile, awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate string
+var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile, awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -41,6 +41,8 @@ func init() {
 	flag.StringVar(&loadBalancer, "loadBalancer", "", "Specifies the load balancer name to use")
 	flag.StringVar(&reportJson, "reportConfig", "", "Filename for the JSON file containing report configuration")
 	flag.StringVar(&reportTemplate, "reportTemplate", "", "Filename for the template that produces the report")
+	flag.StringVar(&functionName, "functionName", "", "Lambda function name")
+	flag.StringVar(&alias, "alias", "", "Lambda alias")
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 }
@@ -357,6 +359,19 @@ func main() {
 			errUsage("Entity ID must be provided")
 		}
 		GetEntity(loadBalancer, flag.Args()[0])
+	case "getLambdaFunctionInfo":
+		if (functionName == "") {
+			errUsage("functionName needs to be specified")
+		}
+		GetLambdaFunctionInfo(functionName)
+	case "getLambdaFunctionAliasInfo":
+		if (functionName == "") {
+			errUsage("functionName needs to be specified")
+		}
+		if (alias == "") {
+			errUsage("alias needs to be specified")
+		}
+		GetLambdaFunctionAliasInfo(functionName, alias)
 	case "help":
 		printCommandHelp()
 	default:

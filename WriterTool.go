@@ -215,7 +215,13 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 		errState(err.Error())
 	}
 
-	file, err := ioutil.ReadFile(filepath.Join(user.HomeDir, ".aws", "credentials"))
+	var path string
+	if (os.Getenv("AWS_CONFIG_FILE") != "") {
+		path = os.Getenv("AWS_CONFIG_FILE");
+	} else {
+		path = filepath.Join(user.HomeDir, ".aws", "credentials")
+	}
+	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		errUsage(err.Error())
 	}

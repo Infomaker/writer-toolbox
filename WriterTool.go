@@ -12,7 +12,9 @@ import (
 	"strings"
 )
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile, awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias string
+var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
+awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias,
+bucket, filename, publish string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -24,8 +26,13 @@ type Auth struct {
 }
 
 func init() {
+	flag.StringVar(&alias, "alias", "", "Lambda alias")
+	flag.StringVar(&bucket, "s3bucket", "", "The S3 bucket name.")
+	flag.StringVar(&filename, "s3filename", "", "The S3 filename.")
+	flag.StringVar(&publish, "publish", "false", "Specifies if lambda function deployment should be published.")
 	flag.StringVar(&command, "command", "", "The command to use. The command 'help' displays available commands.")
 	flag.StringVar(&cluster, "cluster", "", "Specify cluster to use")
+	flag.StringVar(&functionName, "functionName", "", "Lambda function name")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
 	flag.StringVar(&service, "service", "", "Specify ECS service")
@@ -41,8 +48,6 @@ func init() {
 	flag.StringVar(&loadBalancer, "loadBalancer", "", "Specifies the load balancer name to use")
 	flag.StringVar(&reportJson, "reportConfig", "", "Filename for the JSON file containing report configuration")
 	flag.StringVar(&reportTemplate, "reportTemplate", "", "Filename for the template that produces the report")
-	flag.StringVar(&functionName, "functionName", "", "Lambda function name")
-	flag.StringVar(&alias, "alias", "", "Lambda alias")
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 }
@@ -59,6 +64,9 @@ func printCommandHelp() {
 		"releaseService":    "Creates a new release for the service. Neews -cluster, -service, -version flags.",
 		"listEc2Instances":  "List available EC2 instances.",
 		"listLoadBalancers": "List available Load Balancers and their contained EC2 instances.",
+		"listLambdaFunctions": "List available lambda functions.",
+		"getLambdaFunctionInfo" : "Get lambda function information",
+		"getLambdaFunctionAliasInfo" : "Get lambda function information",
 		"getEntity": "Gets an entity from the writer load balancer\n" +
 			"                         -loadBalancer : The load balancer fronting the writer instances    (required)\n" +
 			"                         {entityId}    : The ID of the entity to fetch    (required)\n" +
@@ -210,7 +218,7 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 	var awsAccessKeyIdRegexp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id\\s*=\\s*(.*)")
 	var awsSecretKeyRegexp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key\\s*=\\s*(.*)")
 
-	user, err := user.Current()
+	currUser, err := user.Current()
 	if err != nil {
 		errState(err.Error())
 	}
@@ -219,7 +227,7 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 	if (os.Getenv("AWS_CONFIG_FILE") != "") {
 		path = os.Getenv("AWS_CONFIG_FILE");
 	} else {
-		path = filepath.Join(user.HomeDir, ".aws", "credentials")
+		path = filepath.Join(currUser.HomeDir, ".aws", "credentials")
 	}
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -288,6 +296,20 @@ func main() {
 		bytes := _readConfigFromFile();
 		template := _readTemplateFromFile();
 		GenerateReport(bytes, template)
+	case "deployLambdaFunction":
+		if bucket == "" {
+			errUsage("s3bucket must be speficied")
+		}
+		if filename == "" {
+			errUsage("s3filename must be specified")
+		}
+		if functionName == "" {
+			errUsage("functionName must be specified")
+		}
+		if publish == "true" && alias == "" {
+			errUsage("alias must be specified if publish is set to true")
+		}
+		DeployLambdaFunction(functionName, bucket, filename, alias, publish)
 	case "listClusters":
 		ListClusters()
 	case "listServices":
@@ -314,6 +336,8 @@ func main() {
 		ListEc2Instances()
 	case "listLoadBalancers":
 		ListLoadBalancers()
+	case "listLambdaFunctions":
+		ListLambdaFunctions()
 	case "ssh":
 		if sshPem == "" {
 			errUsage("A SSH PEM file must be specified")

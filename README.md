@@ -34,3 +34,4 @@ writer-tool -h
   1.7      Added command createReport
   1.7.1    Extracting image name from docker image in report
   1.8      Added support for AWS_CONFIG_FILE environment variable when using profiles as credentials
+  1.9      Added lambda getInfo and deploy commands

@@ -75,7 +75,7 @@ _writertool() {
             return 0
             ;;
         -functionName)
-            local names=$( $(_tool) -command listFunctionNames)
+            local names=$( $(_tool) -command listLambdaFunctions)
             COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
             return 0
             ;;

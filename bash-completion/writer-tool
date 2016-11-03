@@ -96,8 +96,7 @@ _writertool() {
             _filedir
             ;;
         -publish)
-            local list="true false"
-            COMPREPLY=( $(compgen -W "${list}" -- ${curl}) )
+            COMPREPLY=( $(compgen -W "true false" -- ${curl}) )
             return -;
             ;;
         -target)

@@ -69,6 +69,8 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version string
 
 	result, err := svc.UpdateFunctionCode(params)
 
+	fmt.Printf("Updated %s with shasum %s\n", *result.FunctionName, *result.CodeSha256)
+
 	if err != nil {
 		errState(err.Error())
 	}
@@ -81,7 +83,7 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version string
 			Description: aws.String(version),
 		}
 
-		_, errP := svc.PublishVersion(params);
+		published, errP := svc.PublishVersion(params);
 
 		if errP != nil {
 			errState(errP.Error())
@@ -89,7 +91,7 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version string
 
 		paramsU := &lambda.UpdateAliasInput{
 			FunctionName: aws.String(functionName),
-			FunctionVersion: aws.String(*result.Version),
+			FunctionVersion: aws.String(*published.Version),
 			Name: aws.String(alias),
 		}
 
@@ -98,6 +100,8 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version string
 		if (errU != nil) {
 			errState(errU.Error())
 		}
+
+		fmt.Printf("Alias %s updated to point to version %s (%s)\n", alias, *published.Version, *published.Description)
 	}
 }
 

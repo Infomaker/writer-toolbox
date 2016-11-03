@@ -73,7 +73,7 @@ _writertool() {
         -command)
             local commands="help deployLambdaFunction listClusters listEc2Instances listLoadBalancers listLambdaFunctions \
             listServices listTasks describeService releaseService updateService scp ssh getEntity getLambdaFunctionInfo \
-            getLambdaFunctionAliasInfo createReport listS3Buckets listFilesInS3Buckets copyFileFromS3Bucket"
+            getLambdaFunctionAliasInfo createReport listS3Buckets listFilesInS3Bucket copyFileFromS3Bucket"
             COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
             return 0
             ;;

@@ -56,8 +56,8 @@ _writertool() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     line="${COMP_LINE}"
-    opts="-alias -awsKey -awsSecretKey -cluster -command -credentials -functionName -instanceId -instanceName -loadBalancer " +
-    "-output -p -pemfile -profile -publish -recursive -reportConfig -reportTemplate -s3bucket -s3filename -service -target -version -v -vv"
+    opts="-alias -awsKey -awsSecretKey -cluster -command -credentials -functionName -instanceId -instanceName -loadBalancer \
+    -output -p -pemfile -profile -publish -recursive -reportConfig -reportTemplate -s3bucket -s3filename -service -target -version -v -vv"
 
     case "${prev}" in
         -cluster)
@@ -71,9 +71,9 @@ _writertool() {
             return 0
             ;;
         -command)
-            local commands="help deployLambdaFunction listClusters listEc2Instances listLoadBalancers listLambdaFunctions " +
-            "listServices listTasks describeService releaseService updateService scp ssh getEntity getLambdaFunctionInfo " +
-            "getLambdaFunctionAliasInfo createReport listS3Buckets listFilesInS3Buckets copyFileFromS3Bucket"
+            local commands="help deployLambdaFunction listClusters listEc2Instances listLoadBalancers listLambdaFunctions \
+            listServices listTasks describeService releaseService updateService scp ssh getEntity getLambdaFunctionInfo \
+            getLambdaFunctionAliasInfo createReport listS3Buckets listFilesInS3Buckets copyFileFromS3Bucket"
             COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
             return 0
             ;;

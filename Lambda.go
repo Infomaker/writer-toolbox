@@ -42,7 +42,6 @@ func _getLambdaFunctionInfo(functionName, qualifier string) *lambda.FunctionConf
 	return resp
 }
 
-
 func _listLambdaFunctions() *lambda.ListFunctionsOutput {
 	svc := lambda.New(session.New(), _getAwsConfig())
 
@@ -59,18 +58,16 @@ func _listLambdaFunctions() *lambda.ListFunctionsOutput {
 	return resp
 }
 
-
-func _deployLambdaFunction(functionName, bucket, filename, alias string, publish bool) {
+func _deployLambdaFunction(functionName, bucket, filename, alias, version string, publish bool) {
 	svc := lambda.New(session.New(), _getAwsConfig())
 
 	params := &lambda.UpdateFunctionCodeInput{
 		FunctionName: aws.String(functionName),
 		S3Bucket: aws.String(bucket),
 		S3Key: aws.String(filename),
-		Publish: aws.Bool(publish),
 	}
 
-	result, err  := svc.UpdateFunctionCode(params)
+	result, err := svc.UpdateFunctionCode(params)
 
 	if err != nil {
 		errState(err.Error())
@@ -78,29 +75,40 @@ func _deployLambdaFunction(functionName, bucket, filename, alias string, publish
 
 	if publish {
 
-		params := &lambda.UpdateAliasInput{
+		params := &lambda.PublishVersionInput{
+			FunctionName: aws.String(functionName),
+			CodeSha256: aws.String(*result.CodeSha256),
+			Description: aws.String(version),
+		}
+
+		_, errP := svc.PublishVersion(params);
+
+		if errP != nil {
+			errState(errP.Error())
+		}
+
+		paramsU := &lambda.UpdateAliasInput{
 			FunctionName: aws.String(functionName),
 			FunctionVersion: aws.String(*result.Version),
 			Name: aws.String(alias),
 		}
 
-		_, err := svc.UpdateAlias(params)
+		_, errU := svc.UpdateAlias(paramsU)
 
-		if (err != nil) {
-			errState(err.Error())
+		if (errU != nil) {
+			errState(errU.Error())
 		}
 	}
 }
 
-
-func DeployLambdaFunction(functionName, bucket, filename, alias, publish string) {
+func DeployLambdaFunction(functionName, bucket, filename, alias, version, publish string) {
 	doPublish, err := strconv.ParseBool(publish)
 
 	if (err != nil) {
 		doPublish = false;
 	}
 
-	_deployLambdaFunction(functionName, bucket, filename, alias, doPublish)
+	_deployLambdaFunction(functionName, bucket, filename, alias, version, doPublish)
 }
 
 func GetLambdaFunctionAliasInfo(functionName, alias string) {
@@ -114,7 +122,6 @@ func GetLambdaFunctionAliasInfo(functionName, alias string) {
 func GetLambdaFunctionInfo(functionName string) {
 	fmt.Println(_getLambdaFunctionInfo(functionName, "$LATEST"))
 }
-
 
 func ListLambdaFunctions() {
 

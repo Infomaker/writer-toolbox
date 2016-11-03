@@ -54,30 +54,45 @@ func init() {
 
 func printCommandHelp() {
 	var m = map[string]string{
-		"help":              "Prints this help.",
-		"createReport":     "Generates a report of running services. Needs -reportConfig and -reportTemplate",
-		"listClusters":      "List available clusters. -v will also list services for all clusters",
-		"listServices":      "List available services. Needs -cluster flag.",
-		"listTasks":         "List tasks for a service. Needs -cluster, -service flags.",
-		"describeService":   "Describes the service. Needs -cluster, -service flags. Optionaly -v and -vv may be used.",
-		"updateService":     "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
-		"releaseService":    "Creates a new release for the service. Neews -cluster, -service, -version flags.",
-		"listEc2Instances":  "List available EC2 instances.",
-		"listLoadBalancers": "List available Load Balancers and their contained EC2 instances.",
-		"listLambdaFunctions": "List available lambda functions.",
-		"getLambdaFunctionInfo" : "Get lambda function information",
-		"getLambdaFunctionAliasInfo" : "Get lambda function information",
-		"getEntity": "Gets an entity from the writer load balancer\n" +
+		"help":                 "Prints this help.",
+		"copyFileFromS3Bucket": "Copies file from S3 to local system" +
+			"                         -s3bucket     : The source bucket   (required)\n" +
+			"                         -s3filename   : The filename to copy   (required)\n" +
+			"                         -output       : The target directory   (required)\n" +
+			"                         Example: -command copyFileFromS3Bucket -s3bucket images -s3filename cat.gif -output ~/Downloads",
+		"createReport":         "Generates a report of running services. Needs -reportConfig and -reportTemplate",
+		"listS3Buckets":        "List available S3 buckets",
+		"listFilesInS3Bucket":  "List available objects in an S3 bucket. Requires -s3bucket. -s3filename could be used as prefix for filtering",
+		"listClusters":         "List available clusters. -v will also list services for all clusters",
+		"listServices":         "List available services. Needs -cluster flag.",
+		"listTasks":            "List tasks for a service. Needs -cluster, -service flags.",
+		"deployLambdaFunction": "Deploys new code for a lambda function" +
+			"                         -s3bucket     : The bucket where the new code is placed in   (required)\n" +
+			"                         -s3filename   : The filename of the code zip   (required)\n" +
+			"                         -functionName : The name of the function to update   (required)\n" +
+			"                         -publish      : 'True' to publish a new version   (optional) default 'false'\n" +
+			"                               -alias      : The alias to update   (required)\n" +
+			"                               -version    : The version number to publish   (required)\n" +
+			"                         Example: -command deployLambdaFunction -s3bucket newCode -s3filename myCode.zip -functionName addNumbers -publish true -alias PRIMARY -version 1.2.1",
+		"describeService":      "Describes the service. Needs -cluster, -service flags. Optionaly -v and -vv may be used.",
+		"updateService":        "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
+		"releaseService":       "Creates a new release for the service. Neews -cluster, -service, -version flags.",
+		"listEc2Instances":     "List available EC2 instances.",
+		"listLoadBalancers":    "List available Load Balancers and their contained EC2 instances.",
+		"listLambdaFunctions":  "List available lambda functions.",
+		"getLambdaFunctionInfo" : "Get lambda function information. Requires -functionName",
+		"getLambdaFunctionAliasInfo" : "Get lambda function information. Requires -functionName, -alias",
+		"getEntity":            "Gets an entity from the writer load balancer\n" +
 			"                         -loadBalancer : The load balancer fronting the writer instances    (required)\n" +
 			"                         {entityId}    : The ID of the entity to fetch    (required)\n" +
 			"                         Example: -command getEntity -loadBalancer writer-loadbalancer a9fbd742-ea87-425d-ae86-045ab3ac91c1",
-		"ssh": "Executes a command over SSH for the specified service.\n" +
+		"ssh":                  "Executes a command over SSH for the specified service.\n" +
 			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
 			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
 			"                         -pemfile      : The SSH pem file used for authentication    (required)\n" +
 			"                         {command}     : The command to execute (e.g. 'ls -l')   (required)\n" +
 			"                         Example: -command ssh -instanceName writer -pemfile ~/.ssh/pem-files/im-dev tail -20 /var/log/writer/writer.log",
-		"scp": "Copies files from the specified instance(s). Needs -instanceName or -instanceId, -output and optionally -recursive flags.\n" +
+		"scp":                  "Copies files from the specified instance(s). Needs -instanceName or -instanceId, -output and optionally -recursive flags.\n" +
 			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
 			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
 			"                         -pemfile      : The SSH pem file used for authentication    (required)\n" +
@@ -292,6 +307,17 @@ func main() {
 	}
 
 	switch command {
+	case "copyFileFromS3Bucket":
+		if bucket == "" {
+			errUsage("s3bucket must be specified")
+		}
+		if filename == "" {
+			errUsage("s3filename must be specified")
+		}
+		if output == "" {
+			errUsage("output must be speficied")
+		}
+		CopyFileFromS3Bucket(bucket, filename, output)
 	case "createReport":
 		bytes := _readConfigFromFile();
 		template := _readTemplateFromFile();
@@ -307,9 +333,19 @@ func main() {
 			errUsage("functionName must be specified")
 		}
 		if publish == "true" && alias == "" {
-			errUsage("alias must be specified if publish is set to true")
+			errUsage("alias must be specified when publishing")
 		}
-		DeployLambdaFunction(functionName, bucket, filename, alias, publish)
+		if publish == "true" && version == "" {
+			errUsage("version must be specified when publishing")
+		}
+		DeployLambdaFunction(functionName, bucket, filename, alias, version, publish)
+	case "listS3Buckets":
+		ListS3Buckets()
+	case "listFilesInS3Bucket":
+		if bucket == "" {
+			errUsage("s3bucket must be specified")
+		}
+		ListFilesInS3Bucket(bucket, filename)
 	case "listClusters":
 		ListClusters()
 	case "listServices":

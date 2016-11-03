@@ -36,3 +36,4 @@ writer-tool -h
   1.8      Added support for AWS_CONFIG_FILE environment variable when using profiles as credentials
   1.9      Added lambda getInfo and deploy commands
   1.9.1    Fix for bash completion bug which did not list function names for -functionName parameter
+  1.10     Added S3 operations. Fixed deploy lambda operation, which now puts the deploy version in lambda version description

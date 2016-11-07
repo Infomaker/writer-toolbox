@@ -39,3 +39,4 @@ writer-tool -h
   1.10     Added S3 operations. Fixed deploy lambda operation, which now puts the deploy version in lambda version description
   1.10.1   Fixed line-wrap issue in bash-completion
   1.10.2   Fixed typo in bash-completion for listFilesInS3Bucket operation
+  1.10.3   Fixed typo in bash-completion for listFilesInS3Bucket operation

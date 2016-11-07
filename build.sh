@@ -7,12 +7,13 @@ rm -rf target
 buildroot=target/writer-toolbox
 
 echo -n "Installing dependencies ... "
-go get 
+go get github.com/ahmetalpbalkan/govvv
+go get
 echo "done"
 
 echo -n "Compiling OS X binary ... "
 mkdir -p ${buildroot}/osx
-go build -o ${buildroot}/osx/writer-tool
+govvv build -o ${buildroot}/osx/writer-tool
 echo "done"
 
 #echo -n "Compiling amd64 Linux binary ... "

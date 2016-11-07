@@ -134,6 +134,7 @@ _writertool() {
         -s3filename)
             local names=$( $(_tool) $(_regex s3bucket) -command listFilesInS3Bucket )
             COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
+            return 0
             ;;
         *)
         ;;

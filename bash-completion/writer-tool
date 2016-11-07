@@ -73,7 +73,7 @@ _writertool() {
         -command)
             local commands="help deployLambdaFunction listClusters listEc2Instances listLoadBalancers listLambdaFunctions \
             listServices listTasks describeService releaseService updateService scp ssh getEntity getLambdaFunctionInfo \
-            getLambdaFunctionAliasInfo createReport listS3Buckets listFilesInS3Bucket copyFileFromS3Bucket"
+            getLambdaFunctionAliasInfo createReport listS3Buckets listFilesInS3Bucket copyFileFromS3Bucket version"
             COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
             return 0
             ;;
@@ -134,6 +134,7 @@ _writertool() {
         -s3filename)
             local names=$( $(_tool) $(_regex s3bucket) -command listFilesInS3Bucket )
             COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
+            return 0
             ;;
         *)
         ;;

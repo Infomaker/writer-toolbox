@@ -12,6 +12,9 @@ import (
 	"strings"
 )
 
+// Build version variables
+var appVersion string
+
 var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
 awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias,
 bucket, filename, publish string
@@ -99,6 +102,8 @@ func printCommandHelp() {
 			"                         -output       : the target directory   (required)\n" +
 			"                         -recursive    : copies from source recursively\n" +
 			"                         Example: -command scp -instanceName writer -pemfile ~/.ssh/pem-files/im-dev -output Documents -recursive /var/log/writer",
+		"version": "Display writer-tool version.",
+
 	}
 
 	k := sortKeys(m)
@@ -438,6 +443,8 @@ func main() {
 			errUsage("alias needs to be specified")
 		}
 		GetLambdaFunctionAliasInfo(functionName, alias)
+	case "version":
+		fmt.Println(appVersion);
 	case "help":
 		printCommandHelp()
 	default:

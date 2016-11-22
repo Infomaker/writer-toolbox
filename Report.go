@@ -14,6 +14,7 @@ type Installations struct {
 type installationItem struct {
 	Label       string `json:"label"`
 	Services    []ServiceItem `json:"services"`
+	Lambdas     []string `json:"lambdas"`
 }
 
 type CredentialsItem struct {
@@ -35,6 +36,7 @@ type Output struct {
 type OutputTemplate struct {
 	Label    string
 	Services []OutputItem
+	Lambdas []LambdaOutputItem
 }
 
 type OutputItem struct {
@@ -44,6 +46,11 @@ type OutputItem struct {
 	Version      string
 	DesiredCount int64
 	RunningCount int64
+}
+
+type LambdaOutputItem struct {
+	Label string
+	Version string
 }
 
 func GenerateReport(jsonData []byte, templateFile string) {
@@ -94,7 +101,22 @@ func GenerateReport(jsonData []byte, templateFile string) {
 					outputTemplate.Services = append(outputTemplate.Services, outputItem)
 				}
 			}
+
 		}
+
+		for k := 0; k < len(installation.Lambdas); k++ {
+			lambdaFunction := installation.Lambdas[k]
+
+			lambdaInfo := _getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
+
+			outputItem := LambdaOutputItem{
+				Version: *lambdaInfo.FunctionVersion,
+				Label: lambdaFunction,
+			}
+
+			outputTemplate.Lambdas = append(outputTemplate.Lambdas, outputItem)
+		}
+
 		output.Installations = append(output.Installations, outputTemplate)
 	}
 

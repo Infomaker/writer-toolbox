@@ -51,6 +51,7 @@ type OutputItem struct {
 type LambdaOutputItem struct {
 	Label string
 	Version string
+	Description string
 }
 
 func GenerateReport(jsonData []byte, templateFile string) {
@@ -110,6 +111,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			lambdaInfo := _getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
 
 			outputItem := LambdaOutputItem{
+				Description: *lambdaInfo.Description,
 				Version: *lambdaInfo.FunctionVersion,
 				Label: lambdaFunction,
 			}

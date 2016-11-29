@@ -108,12 +108,14 @@ func GenerateReport(jsonData []byte, templateFile string) {
 		for k := 0; k < len(installation.Lambdas); k++ {
 			lambdaFunction := installation.Lambdas[k]
 
-			lambdaInfo := _getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
+			aliasInfo := _getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
+
+			functionInfo := _getLambdaFunctionInfo(lambdaFunction, *aliasInfo.FunctionVersion);
 
 			outputItem := LambdaOutputItem{
-				Description: *lambdaInfo.Description,
-				Version: *lambdaInfo.FunctionVersion,
-				Label: lambdaFunction,
+				Description: *aliasInfo.Description,
+				Version: *functionInfo.Version,
+				Label: functionInfo.Description,
 			}
 
 			outputTemplate.Lambdas = append(outputTemplate.Lambdas, outputItem)

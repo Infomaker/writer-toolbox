@@ -42,3 +42,4 @@ writer-tool -h
   1.10.3   Fixed typo in bash-completion for listFilesInS3Bucket operation
   1.11     Added lambdas to reporting
   1.11.1   Added description to report for lambda output item
+  1.11.2   Fix for version reporting of lambda in report

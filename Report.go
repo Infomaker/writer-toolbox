@@ -115,7 +115,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			outputItem := LambdaOutputItem{
 				Description: *aliasInfo.Description,
 				Version: *functionInfo.Version,
-				Label: *functionInfo.Description,
+				Label: lambdaFunction,
 			}
 
 			outputTemplate.Lambdas = append(outputTemplate.Lambdas, outputItem)

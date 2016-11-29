@@ -43,3 +43,4 @@ writer-tool -h
   1.11     Added lambdas to reporting
   1.11.1   Added description to report for lambda output item
   1.11.2   Fix for version reporting of lambda in report
+  1.11.2.1 Bugfix, missing pointer in reporting

@@ -113,7 +113,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			functionInfo := _getLambdaFunctionInfo(lambdaFunction, *aliasInfo.FunctionVersion);
 
 			outputItem := LambdaOutputItem{
-				Description: *aliasInfo.Description,
+				Description: *functionInfo.Description,
 				Version: *functionInfo.Version,
 				Label: lambdaFunction,
 			}

@@ -46,3 +46,4 @@ writer-tool -h
     1.11.2.1 Bugfix, missing pointer in reporting
     1.11.2.2 Fix for label in lambda output in reporting
     1.11.2.3 Getting the correct lambda description for version
+    1.11.3   Fixed docker image build problem

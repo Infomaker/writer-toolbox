@@ -82,16 +82,18 @@ func ListS3Buckets() {
 func ListFilesInS3Bucket(bucketName, prefix string) {
 	files := _listFilesInS3Bucket(bucketName, prefix)
 
-	// -rw-r--r--  1 tobias  staff      1392 Sep 28 15:21 Clusters.go
-
 	for i := 0; i < len(files.Contents); i++ {
 		file := files.Contents[i]
-		if (verboseLevel > 0) {
+
+		if (verboseLevel == 1) {
+			// https://writer-lambda-releases.s3.amazonaws.com/ImageMetadata-develop.zip
+			fmt.Printf("https://%s.s3.amazonaws.com/%s\n", bucketName, *file.Key)
+		} else if (verboseLevel == 2) {
+			// -rw-r--r--  1 tobias  staff      1392 Sep 28 15:21 Clusters.go
 			fmt.Printf("%s  %16.d %s %s\n", *file.Owner.DisplayName, *file.Size, file.LastModified.Format("2006-01-02 15:04:05-0700"), *file.Key)
 		} else {
 			fmt.Println(*file.Key)
 		}
-
 	}
 }
 

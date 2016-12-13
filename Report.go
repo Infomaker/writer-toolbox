@@ -12,9 +12,15 @@ type Installations struct {
 }
 
 type installationItem struct {
-	Label       string `json:"label"`
-	Services    []ServiceItem `json:"services"`
-	Lambdas     []string `json:"lambdas"`
+	Label    string `json:"label"`
+	Services []ServiceItem `json:"services"`
+	Lambdas  []string `json:"lambdas"`
+	Other    []OtherItem `json:"other"`
+}
+
+type OtherItem struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
 }
 
 type CredentialsItem struct {
@@ -27,6 +33,7 @@ type ServiceItem struct {
 	Label   string `json:"label"`
 	Cluster string `json:"cluster"`
 	Service string `json:"service"`
+	Url     string `json:"url"`
 }
 
 type Output struct {
@@ -36,7 +43,8 @@ type Output struct {
 type OutputTemplate struct {
 	Label    string
 	Services []OutputItem
-	Lambdas []LambdaOutputItem
+	Lambdas  []LambdaOutputItem
+	Others   []OtherOutputItem
 }
 
 type OutputItem struct {
@@ -46,12 +54,18 @@ type OutputItem struct {
 	Version      string
 	DesiredCount int64
 	RunningCount int64
+	Url          string
 }
 
 type LambdaOutputItem struct {
-	Label string
-	Version string
+	Label       string
+	Version     string
 	Description string
+}
+
+type OtherOutputItem struct {
+	Label string
+	Url   string
 }
 
 func GenerateReport(jsonData []byte, templateFile string) {
@@ -87,10 +101,10 @@ func GenerateReport(jsonData []byte, templateFile string) {
 				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition);
 				version, image := ExtractVersion(*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image)
 
-
-
 				for l := 0; l < len(realService.Deployments); l++ {
 					deployment := realService.Deployments[l];
+					url := service.Url;
+
 					outputItem := OutputItem{
 						Version: version,
 						Image:ExtractImageName(image),
@@ -98,11 +112,11 @@ func GenerateReport(jsonData []byte, templateFile string) {
 						Label:service.Label,
 						RunningCount:*deployment.RunningCount,
 						DesiredCount:*deployment.DesiredCount,
+						Url:url,
 					}
 					outputTemplate.Services = append(outputTemplate.Services, outputItem)
 				}
 			}
-
 		}
 
 		for k := 0; k < len(installation.Lambdas); k++ {
@@ -119,6 +133,15 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			}
 
 			outputTemplate.Lambdas = append(outputTemplate.Lambdas, outputItem)
+		}
+
+		for k := 0; k < len(installation.Other); k++ {
+			item := installation.Other[k]
+			outputItem := OtherOutputItem{
+				Label: item.Name,
+				Url: item.Url,
+			}
+			outputTemplate.Others = append(outputTemplate.Others, outputItem)
 		}
 
 		output.Installations = append(output.Installations, outputTemplate)

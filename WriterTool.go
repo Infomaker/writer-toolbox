@@ -81,7 +81,7 @@ func printCommandHelp() {
 		"describeService":      "Describes the service. Needs -cluster, -service flags. Optionaly -v and -vv may be used.",
 		"updateService":        "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
 		"updateServices":        "Stop/start all running tasks for specified services. Needs -updateFiles flag.\n" +
-			"                           -updateFiles : Path to a file containing services to update. Format of file is: \n" +
+			"                           -updatesFile : Path to a file containing services to update. Format of file is: \n" +
 			"                             [\n" +
 			"                               {\n" +
 			"                                  \"awsKey\": \"(aws key)\"\n" +

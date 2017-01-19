@@ -49,3 +49,4 @@ writer-tool -h
     1.11.3   Fixed docker image build problem
     1.12     Added public URL to verbosity level for listFilesInS3Bucket command
     1.13     Added other services and urls in services in reporting
+    1.14     Added parallel update of services

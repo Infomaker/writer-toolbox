@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"os"
 )
@@ -74,7 +73,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 	err := json.Unmarshal(jsonData, &config)
 
 	if err != nil {
-		fmt.Println(err.Error())
+		errState(err.Error())
 	}
 
 	output := Output{}
@@ -89,10 +88,10 @@ func GenerateReport(jsonData []byte, templateFile string) {
 		for j := 0; j < len(installation.Services); j++ {
 
 			service := installation.Services[j]
-			clusterArn := GetClusterArn(service.Cluster);
-			serviceArn := GetServiceArn(clusterArn, service.Service);
+			clusterArn := GetClusterArn(service.Cluster, nil);
+			serviceArn := GetServiceArn(clusterArn, service.Service, nil);
 
-			serviceDescription := _describeService(clusterArn, serviceArn)
+			serviceDescription := _describeService(clusterArn, serviceArn, nil)
 
 			for k := 0; k < len(serviceDescription.Services); k++ {
 

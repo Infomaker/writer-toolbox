@@ -17,7 +17,7 @@ var appVersion string
 
 var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
 awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias,
-bucket, filename, publish string
+bucket, filename, publish, updatesFile string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -51,6 +51,7 @@ func init() {
 	flag.StringVar(&loadBalancer, "loadBalancer", "", "Specifies the load balancer name to use")
 	flag.StringVar(&reportJson, "reportConfig", "", "Filename for the JSON file containing report configuration")
 	flag.StringVar(&reportTemplate, "reportTemplate", "", "Filename for the template that produces the report")
+	flag.StringVar(&updatesFile, "updatesFile", "", "File containing services to update. JSON formatted")
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 }
@@ -79,6 +80,17 @@ func printCommandHelp() {
 			"                         Example: -command deployLambdaFunction -s3bucket newCode -s3filename myCode.zip -functionName addNumbers -publish true -alias PRIMARY -version 1.2.1",
 		"describeService":      "Describes the service. Needs -cluster, -service flags. Optionaly -v and -vv may be used.",
 		"updateService":        "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
+		"updateServices":        "Stop/start all running tasks for specified services. Needs -updateFiles flag.\n" +
+			"                           -updateFiles : Path to a file containing services to update. Format of file is: \n" +
+			"                             [\n" +
+			"                               {\n" +
+			"                                  \"awsKey\": \"(aws key)\"\n" +
+			"                                  \"awsSecret\": \"(aws secret key)\"\n" +
+			"                                  \"cluster\": \"(cluster as reported using -listClusters)\"\n" +
+			"                                  \"service\": \"(service as reported using -listServices)\"\n" +
+			"                                  \"label\": \"(Label that should be used in output for service)\"\n" +
+			"                               }\n" +
+			"                             ]\n",
 		"releaseService":       "Creates a new release for the service. Neews -cluster, -service, -version flags.",
 		"listEc2Instances":     "List available EC2 instances.",
 		"listLoadBalancers":    "List available Load Balancers and their contained EC2 instances.",
@@ -175,7 +187,7 @@ func _getClusterArn() string {
 		errUsage("You must specify a cluster name with: -cluster")
 	}
 
-	arn := GetClusterArn(cluster)
+	arn := GetClusterArn(cluster, nil)
 	if arn == "" {
 		errUsage("Could not find cluster ARN for name: " + cluster)
 	}
@@ -194,7 +206,7 @@ func _getServiceArn() string {
 
 	clusterArn := _getClusterArn()
 
-	serviceArn := GetServiceArn(clusterArn, service)
+	serviceArn := GetServiceArn(clusterArn, service, nil)
 
 	return serviceArn
 }
@@ -272,20 +284,21 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 	return awsAccessKeyId, awsSecretKey
 }
 
-func main() {
-	flag.Parse()
-
-	if verbose {
-		verboseLevel = 1
-	}
-	if moreVerbose {
-		verboseLevel = 2
+func _getUpdatesFile() []byte {
+	if updatesFile == "" {
+		errUsage("An updates file needs to be provided with -updatesFile")
 	}
 
-	if command == "" {
-		flag.PrintDefaults()
-		return
+	file, err := ioutil.ReadFile(updatesFile)
+
+	if err != nil {
+		errUsage(err.Error())
 	}
+
+	return file;
+}
+
+func UpdateCredentials() {
 
 	if credentialsFile != "" {
 		key, secret := getAwsCredentials(credentialsFile)
@@ -310,6 +323,24 @@ func main() {
 		auth.key = awsKey
 		auth.secret = awsSecretKey
 	}
+}
+
+func main() {
+	flag.Parse()
+
+	if verbose {
+		verboseLevel = 1
+	}
+	if moreVerbose {
+		verboseLevel = 2
+	}
+
+	if command == "" {
+		flag.PrintDefaults()
+		return
+	}
+
+	UpdateCredentials()
 
 	switch command {
 	case "copyFileFromS3Bucket":
@@ -368,6 +399,9 @@ func main() {
 		clusterArn := _getClusterArn()
 		serviceArn := _getServiceArn()
 		UpdateService(clusterArn, serviceArn)
+	case "updateServices":
+		updatesFile := _getUpdatesFile()
+		UpdateServices(updatesFile)
 	case "releaseService":
 		clusterArn := _getClusterArn()
 		serviceArn := _getServiceArn()

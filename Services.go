@@ -58,7 +58,6 @@ func _listServices(cluster string, svc *ecs.ECS) *ecs.ListServicesOutput {
 
 	params := &ecs.ListServicesInput{
 		Cluster:    aws.String(cluster),
-		MaxResults: aws.Int64(10),
 	}
 
 	resp, err := svc.ListServices(params)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
@@ -15,7 +14,6 @@ func _listEc2Instances() *ec2.DescribeInstancesOutput {
 	svc := ec2.New(session.New(), _getAwsConfig())
 
 	params := &ec2.DescribeInstancesInput{
-		MaxResults: aws.Int64(30),
 	}
 
 	resp, err := svc.DescribeInstances(params)

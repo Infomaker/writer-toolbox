@@ -4,7 +4,6 @@ import (
 	"regexp"
 
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"os"
@@ -28,7 +27,6 @@ func _listClusters(svc *ecs.ECS) *ecs.ListClustersOutput {
 	}
 
 	params := &ecs.ListClustersInput{
-		MaxResults: aws.Int64(10),
 	}
 
 	resp, err := svc.ListClusters(params)

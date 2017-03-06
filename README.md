@@ -52,3 +52,4 @@ writer-tool -h
     1.14     Added parallel update of services
     1.15     Removed cap of list size for ec2instances, clusters and services
     1.16     Fix for panic when listing ec2 instances where public IP is missing
+    1.17     Added 'login' command for logging into ec2 instances using ssh

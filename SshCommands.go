@@ -6,12 +6,36 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"os"
 	"os/exec"
+	"syscall"
 )
+
+func SshLogin(instance *ec2.Instance, pemFile string) {
+	path, err := exec.LookPath("ssh")
+	if (err != nil) {
+		errUsage("Could not find binary 'ssh' in path")
+	}
+
+	if (instance.PublicIpAddress == nil) {
+		errUsage("No public IP number on instance: " + _getName(instance.Tags))
+	}
+
+	if (pemFile == "") {
+		pemFile = _getPemFile()
+	}
+
+	args := []string{ "ssh", "-i", pemFile, "ec2-user@" + *instance.PublicIpAddress}
+
+	env := os.Environ()
+	execErr := syscall.Exec(path, args, env)
+	if (execErr != nil) {
+		errState(execErr.Error())
+	}
+}
 
 func Ssh(instance *ec2.Instance, pemFile string, commands []string) {
 	path, err := exec.LookPath("ssh")
 	if err != nil {
-		errUsage("Couldn not find binary 'ssh' in path")
+		errUsage("Could not find binary 'ssh' in path")
 	}
 
 	var arguments []string

@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
+	"unicode/utf8"
 )
 
 func _listEc2Instances() *ec2.DescribeInstancesOutput {
@@ -35,7 +37,15 @@ func ListEc2Instances() {
 			instance := resp.Reservations[i].Instances[j]
 			if *instance.State.Name == "running" {
 				if verboseLevel == 2 {
-					fmt.Printf("%s (%s): %s, %s \n", *instance.InstanceId, *instance.PublicIpAddress, _getName(instance.Tags), *instance.State.Name)
+					// fmt.Printf("%s (%s): %s, %s \n", *instance.InstanceId, *instance.PublicIpAddress, _getName(instance.Tags), *instance.State.Name)
+
+					if (instance.PublicIpAddress != nil) {
+						fmt.Printf("%s %s %s: %s \n", tabs(18, *instance.PublicIpAddress), tabs(30, _getName(instance.Tags)), *instance.InstanceId, *instance.State.Name)
+					} else if (instance.PrivateIpAddress != nil) {
+						fmt.Printf("%s %s %s: %s \n", tabs(18, "(" + *instance.PrivateIpAddress + ")"), tabs(30, _getName(instance.Tags)), *instance.InstanceId, *instance.State.Name)
+					} else {
+						fmt.Printf("%s, %s: %s \n", _getName(instance.Tags), *instance.InstanceId, *instance.State.Name)
+					}
 				} else if verboseLevel == 1 {
 					fmt.Println(_getName(instance.Tags))
 				} else {
@@ -44,6 +54,17 @@ func ListEc2Instances() {
 			}
 		}
 	}
+}
+
+func tabs(size int, output string) string {
+	return output + strings.Repeat(" ", max(1, size - utf8.RuneCountInString(output)))
+}
+
+func max(a, b int) int {
+	if (a < b) {
+		return b
+	}
+	return a
 }
 
 func GetEntity(loadBalancerId, entityId string) {

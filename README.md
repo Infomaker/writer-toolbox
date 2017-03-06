@@ -51,3 +51,4 @@ writer-tool -h
     1.13     Added other services and urls in services in reporting
     1.14     Added parallel update of services
     1.15     Removed cap of list size for ec2instances, clusters and services
+    1.16     Fix for panic when listing ec2 instances where public IP is missing

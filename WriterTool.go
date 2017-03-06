@@ -110,10 +110,14 @@ func printCommandHelp() {
 		"scp":                  "Copies files from the specified instance(s). Needs -instanceName or -instanceId, -output and optionally -recursive flags.\n" +
 			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
 			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
-			"                         -pemfile      : The SSH pem file used for authentication    (required)\n" +
+			"                         -pemfile      : The SSH pem file used for authentication    (optional)\n" +
 			"                         -output       : the target directory   (required)\n" +
 			"                         -recursive    : copies from source recursively\n" +
 			"                         Example: -command scp -instanceName writer -pemfile ~/.ssh/pem-files/im-dev -output Documents -recursive /var/log/writer",
+		"login":		"Log in to instance using SSH\n" +
+			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
+			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
+			"                         -pemfile      : The SSH pem file used for authentication    (optional)",
 		"version": "Display writer-tool version.",
 
 	}
@@ -284,6 +288,33 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 	return awsAccessKeyId, awsSecretKey
 }
 
+func getPemfileFromProfile(profile string) string {
+	var pemregex = regexp.MustCompile("\\[\\s*" + profile + "\\s*\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key.*\n\\s*pemfile\\s*=\\s*(.*)")
+
+	currUser, err := user.Current()
+	if err != nil {
+		errState(err.Error())
+	}
+
+	var path string
+	if (os.Getenv("AWS_CONFIG_FILE") != "") {
+		path = os.Getenv("AWS_CONFIG_FILE");
+	} else {
+		path = filepath.Join(currUser.HomeDir, ".aws", "credentials")
+	}
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		errUsage(err.Error())
+	}
+
+	matches := pemregex.FindStringSubmatch(string(file))
+	if len(matches) < 2 {
+		errUsage("Could not find pemfile in config file, please specify with -pemfile")
+	}
+
+	return strings.TrimSpace(matches[1])
+}
+
 func _getUpdatesFile() []byte {
 	if updatesFile == "" {
 		errUsage("An updates file needs to be provided with -updatesFile")
@@ -429,6 +460,25 @@ func main() {
 					fmt.Printf("[%s]\n", *instances[i].InstanceId)
 					Ssh(instances[i], sshPem, flag.Args())
 				}
+			}
+		} else {
+			errUsage("Either instanceId or instanceName parameter has to be specified")
+		}
+	case "login":
+		if instanceId != "" {
+			instance := GetInstanceForId(instanceId)
+			SshLogin(instance, sshPem)
+		} else if instanceName != "" {
+			instances := GetInstancesForName(instanceName)
+			if len(instances) == 1 {
+				SshLogin(instances[0], sshPem)
+			} else {
+				fmt.Printf("Found %d instances with name %s\n", len(instances), instanceName)
+				fmt.Println("Please specify instance ID with -instanceId flag for:")
+				for i := 0; i < len(instances); i++ {
+					fmt.Printf("   %s\n", *instances[i].InstanceId)
+				}
+				os.Exit(1)
 			}
 		} else {
 			errUsage("Either instanceId or instanceName parameter has to be specified")

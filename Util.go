@@ -72,3 +72,11 @@ func _getAwsConfig() *aws.Config {
 	}
 	return &aws.Config{Region: aws.String(region)}
 }
+
+
+func _getPemFile() string {
+	if profile != "" {
+		return getPemfileFromProfile(profile)
+	}
+	return ""
+}

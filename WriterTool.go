@@ -92,6 +92,17 @@ func printCommandHelp() {
 			"                               }\n" +
 			"                             ]\n",
 		"releaseService":       "Creates a new release for the service. Neews -cluster, -service, -version flags.",
+		"releaseServices":	"Release all services specified. Needs -version, -updateFiles flag. \n" +
+			"                           -updatesFile : Path to a file containing services to update. Format of file is: \n" +
+			"                             [\n" +
+			"                               {\n" +
+			"                                  \"awsKey\": \"(aws key)\"\n" +
+			"                                  \"awsSecret\": \"(aws secret key)\"\n" +
+			"                                  \"cluster\": \"(cluster as reported using -listClusters)\"\n" +
+			"                                  \"service\": \"(service as reported using -listServices)\"\n" +
+			"                                  \"label\": \"(Label that should be used in output for service)\"\n" +
+			"                               }\n" +
+			"                             ]\n",
 		"listEc2Instances":     "List available EC2 instances.",
 		"listLoadBalancers":    "List available Load Balancers and their contained EC2 instances.",
 		"listLambdaFunctions":  "List available lambda functions.",
@@ -438,6 +449,10 @@ func main() {
 		serviceArn := _getServiceArn()
 		version := _getVersion()
 		ReleaseService(clusterArn, serviceArn, version)
+	case "releaseServices":
+		updatesFile := _getUpdatesFile();
+		version := _getVersion()
+		ReleaseServices(version, updatesFile)
 	case "listEc2Instances":
 		ListEc2Instances()
 	case "listLoadBalancers":

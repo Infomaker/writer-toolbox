@@ -126,8 +126,10 @@ func _describeTasks(clusterArn string, tasks []*string, svc *ecs.ECS) (*ecs.Desc
 	return result, nil
 }
 
-func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput) string {
-	svc := ecs.New(session.New(), _getAwsConfig())
+func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc *ecs.ECS) string {
+	if (svc == nil) {
+		svc = ecs.New(session.New(), _getAwsConfig())
+	}
 
 	params := &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: taskDefinition.TaskDefinition.ContainerDefinitions,
@@ -146,13 +148,18 @@ func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput) str
 	return *taskDefinitionArn
 }
 
-func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.DescribeServicesOutput) {
-	svc := ecs.New(session.New(), _getAwsConfig())
+func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.DescribeServicesOutput, svc *ecs.ECS) {
+	if (svc == nil) {
+		svc = ecs.New(session.New(), _getAwsConfig())
+	}
+
+	clusterArn := service.Services[0].ClusterArn
+	serviceArn := service.Services[0].ServiceArn
 
 	params := &ecs.UpdateServiceInput{
-		Cluster:        aws.String(*service.Services[0].ClusterArn),
+		Cluster:        aws.String(*clusterArn),
 		DesiredCount:   aws.Int64(*service.Services[0].DesiredCount),
-		Service:        aws.String(*service.Services[0].ServiceArn),
+		Service:        aws.String(*serviceArn),
 		TaskDefinition: aws.String(newTaskDefinitionArn),
 	}
 
@@ -161,6 +168,37 @@ func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.D
 	if err != nil {
 		errState(err.Error())
 	}
+
+	_waitForUpdatedTaskDefinition(*clusterArn, *serviceArn, svc)
+}
+
+func _waitForUpdatedTaskDefinition(cluster string, service string, svc *ecs.ECS) error {
+	newTask := ""
+
+	attempts := 240
+	sleepTime := 2
+
+	for i := 0; i < attempts; i++ {
+
+		currentService := _describeService(cluster, service, svc);
+
+		for j := 0; j < len(currentService.Services); j++ {
+			item := currentService.Services[j]
+
+			for k := 0; k < len(item.Deployments); k++ {
+				deployment := item.Deployments[k]
+
+				if (*deployment.Status == "PRIMARY" && *deployment.RunningCount == *deployment.DesiredCount) {
+					return nil
+				}
+			}
+		}
+
+		time.Sleep(time.Duration(sleepTime) * time.Second)
+	}
+
+	return errors.New("Task " + newTask + " did not start in " + strconv.Itoa(attempts * sleepTime) + " seconds")
+
 }
 
 func ListServices(clusterArn string) {
@@ -210,14 +248,18 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	tasks, err := _listTasks(clusterArn, serviceArn, svc)
 	if (err != nil) {
 		if (done != nil) {
-			done <- Report{Message:err.Error(),Success:false}
+			done <- Report{Message:err.Error(), Success:false}
 		}
 		return "", err
 	}
 	service := _describeService(clusterArn, serviceArn, svc)
 
 	if len(service.Services) > 1 {
-		return "", errors.New("No support for multiple services.")
+		errMessage := "No support for multiple services"
+		if (done != nil) {
+			done <- Report{Message: errMessage, Success:false}
+		}
+		return "", errors.New(errMessage)
 	}
 
 	desiredCount := *service.Services[0].DesiredCount
@@ -225,30 +267,23 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	if len(tasks.TaskArns) < int(desiredCount) {
 		errorMessage := "The number of actual tasks " + strconv.Itoa(len(tasks.TaskArns)) + " differs from desired tasks " + strconv.FormatInt(desiredCount, 10)
 		if (done != nil) {
-			done <- Report{Message:errorMessage,Success:false}
+			done <- Report{Message:errorMessage, Success:false}
 		}
 		return "", errors.New(errorMessage)
 	}
 
 	for i := 0; i < len(tasks.TaskArns); i++ {
-		currentTasks, err := _listTasks(clusterArn, serviceArn, svc)
-		if (err != nil) {
-			if (done != nil) {
-				done <- Report{Message:err.Error(),Success:false}
-			}
-			return "", err
-		}
 		err = _stopTask(clusterArn, *tasks.TaskArns[i], svc)
 		if err != nil {
 			if (done != nil) {
-				done <- Report{Message:err.Error(),Success:false}
+				done <- Report{Message:err.Error(), Success:false}
 			}
 			return "", err
 		}
-		err = _waitForNewTask(clusterArn, serviceArn, currentTasks.TaskArns, svc)
+		err = _waitForUpdatedTaskDefinition(clusterArn, serviceArn, svc)
 		if err != nil {
 			if (done != nil) {
-				done <- Report{Message:err.Error(),Success:false}
+				done <- Report{Message:err.Error(), Success:false}
 			}
 			return "", err
 		}
@@ -256,7 +291,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	message := "Service " + *service.Services[0].ServiceName + " is updated"
 
 	if done != nil {
-		done <- Report{Message:message,Success:true}
+		done <- Report{Message:message, Success:true}
 	}
 
 	return message, nil
@@ -303,7 +338,7 @@ func UpdateServices(data []byte) {
 	for i := 0; i < len(updateConfig); i++ {
 		config := updateConfig[i]
 		if (config.AwsKey == "" && config.Profile == "") {
-			messages <- Report{Message:config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service,Success:false}
+			messages <- Report{Message:config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success:false}
 		} else {
 			svc := GetSvcForCredentials(config.AwsKey, config.AwsSecret, config.Profile)
 			clusterArn := GetClusterArn(config.Cluster, svc)
@@ -354,56 +389,139 @@ func DescribeService(clusterArn, serviceArn string) {
 
 		if verboseLevel == 2 {
 			fmt.Printf("Deployment configuration -> MaximumPercent: %d, MinimumHealthyPercent: %d\n", *item.DeploymentConfiguration.MaximumPercent, *item.DeploymentConfiguration.MinimumHealthyPercent)
-			definition := _describeTaskDefinition(*item.TaskDefinition)
+			definition := _describeTaskDefinition(*item.TaskDefinition, nil)
 			fmt.Println(definition)
 		}
 	}
 }
 
 func ReleaseService(clusterArn, serviceArn, version string) {
-	service := _describeService(clusterArn, serviceArn, nil)
+	message, err := _releaseService(clusterArn, serviceArn, version, nil, nil)
+
+	if (err != nil) {
+		errState(err.Error())
+	}
+
+	fmt.Println(message)
+}
+
+func _releaseService(clusterArn, serviceArn, version string, done chan Report, svc *ecs.ECS) (string, error) {
+	service := _describeService(clusterArn, serviceArn, svc)
 
 	if len(service.Services) > 1 {
-		errState("No support for multiple services.")
+		errorMessage := *service.Services[0].ServiceName + " No support for multiple services"
+		if (done != nil) {
+			done <- Report{Message: errorMessage, Success:false}
+		}
+		return "", errors.New(errorMessage)
 	}
 
 	taskDefinitionName := *service.Services[0].TaskDefinition
-	taskDefinition := _describeTaskDefinition(taskDefinitionName)
+	taskDefinition := _describeTaskDefinition(taskDefinitionName, svc)
 	dockerImage := *taskDefinition.TaskDefinition.ContainerDefinitions[0].Image
 	currentVersion, imagePart := ExtractVersion(dockerImage)
 
-	fmt.Printf("Service            [%s]\n", *service.Services[0].ServiceName)
-	fmt.Printf("Task definition    [%s]\n", taskDefinitionName)
-	fmt.Printf("Docker image       [%s]\n", imagePart)
-	fmt.Printf("Version            [%s]\n", currentVersion)
+	if (verboseLevel > 0) {
+		fmt.Printf("Service            [%s]\n", *service.Services[0].ServiceName)
+		fmt.Printf("Task definition    [%s]\n", taskDefinitionName)
+		fmt.Printf("Docker image       [%s]\n", imagePart)
+		fmt.Printf("Version            [%s]\n", currentVersion)
+	}
 
 	if version == currentVersion {
-		errUsage("Specified version is already deployed!")
+		errMessage := *service.Services[0].ServiceName + " Specified version is already deployed!"
+		if (done != nil) {
+			done <- Report{Message: errMessage, Success:false}
+		}
+		return "", errors.New(errMessage)
 	}
 
 	minimumHealthyPercentage := *service.Services[0].DeploymentConfiguration.MinimumHealthyPercent
 	desiredCount := *service.Services[0].DesiredCount
 	minimumHealthyCount := desiredCount * minimumHealthyPercentage / 100
 
-	fmt.Printf("HealthyPercentage [%d], DesiredCount [%d] -> Number of running instances during deployment [%d] ... ", minimumHealthyPercentage, desiredCount, minimumHealthyCount)
-
-	if desiredCount - minimumHealthyCount == 0 {
-		errUsage("Not possible to deploy because of too high healthy percentage")
+	if (verboseLevel > 0) {
+		fmt.Printf("HealthyPercentage [%d], DesiredCount [%d] -> Number of running instances during deployment [%d] ... ", minimumHealthyPercentage, desiredCount, minimumHealthyCount)
 	}
 
-	fmt.Println("OK")
+	if desiredCount - minimumHealthyCount == 0 {
+
+		errMessage := *service.Services[0].ServiceName + " Not possible to deploy because of too high healthy percentage"
+		if (done != nil) {
+			done <- Report{Message: errMessage, Success:false}
+		}
+		return "", errors.New(errMessage)
+	}
 
 	*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image = imagePart + ":" + version
 
-	fmt.Println(*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image)
+	newTaskDefinitionArn := _createTaskDefinition(taskDefinition, svc)
 
-	newTaskDefinitionArn := _createTaskDefinition(taskDefinition)
+	_updateTaskDefinitionForService(newTaskDefinitionArn, service, svc)
 
-	_updateTaskDefinitionForService(newTaskDefinitionArn, service)
+	message := "Service " + *service.Services[0].ServiceName + " is released with version " + version
+
+	if done != nil {
+		done <- Report{Message:message, Success:true}
+	}
+
+	return message, nil
 }
 
-func _describeTaskDefinition(taskDefinitionName string) *ecs.DescribeTaskDefinitionOutput {
-	svc := ecs.New(session.New(), _getAwsConfig())
+func ReleaseServices(version string, data []byte) {
+	var updateConfig []Update
+
+	err := json.Unmarshal(data, &updateConfig)
+
+	if err != nil {
+		errState(err.Error())
+	}
+
+	messages := make(chan Report, len(updateConfig))
+
+	fmt.Printf("Performing release to %s on %d services\n", version, len(updateConfig))
+
+	for i := 0; i < len(updateConfig); i++ {
+		config := updateConfig[i]
+
+		if (config.AwsKey == "" && config.Profile == "") {
+			messages <- Report{Message:config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success:false}
+		} else {
+			svc := GetSvcForCredentials(config.AwsKey, config.AwsSecret, config.Profile)
+			clusterArn := GetClusterArn(config.Cluster, svc)
+			serviceArn := GetServiceArn(clusterArn, config.Service, svc)
+			fmt.Println(config.Label + ": Releasing service " + config.Service)
+			go _releaseService(clusterArn, serviceArn, version, messages, svc)
+		}
+	}
+
+	result := len(updateConfig);
+	success := true
+	for {
+		message, more := <-messages
+		if more {
+			result--;
+			fmt.Printf("%s, %d to go\n", message.Message, result)
+			if !message.Success {
+				success = false
+			}
+		}
+
+		if (result < 1) {
+			break;
+		}
+	}
+
+	if !success {
+		errState("Release failed for one or more services")
+	}
+
+}
+
+func _describeTaskDefinition(taskDefinitionName string, svc *ecs.ECS) *ecs.DescribeTaskDefinitionOutput {
+	if svc == nil {
+		svc = ecs.New(session.New(), _getAwsConfig())
+	}
 
 	params := &ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: aws.String(taskDefinitionName),
@@ -436,61 +554,6 @@ func _stopTask(cluster, taskArn string, svc *ecs.ECS) error {
 	}
 
 	return nil
-}
-
-func _waitForNewTask(cluster string, service string, tasks []*string, svc *ecs.ECS) error {
-	newTask := ""
-
-	attempts := 240
-	sleepTime := 2
-	newTaskAttempts := 5
-
-	for i := 0; i < attempts; i++ {
-		currentTasks, err := _listTasks(cluster, service, svc)
-		if (err != nil) {
-			return err
-		}
-		if len(currentTasks.TaskArns) < len(tasks) || len(currentTasks.TaskArns) == 0 {
-		} else if newTask == "" {
-			newTask = _findNewTask(tasks, currentTasks.TaskArns)
-			newTaskAttempts--
-
-			if newTask == "" && newTaskAttempts >= 0 {
-			} else if newTask != "" {
-			} else {
-				return errors.New("No new task found among tasks")
-			}
-
-		}
-
-		if newTask != "" {
-			taskStates, err := _describeTasks(cluster, []*string{aws.String(newTask)}, svc)
-			if (err != nil) {
-				return err
-			}
-			if *taskStates.Tasks[0].LastStatus == "RUNNING" {
-				return nil
-			} else if *taskStates.Tasks[0].LastStatus == "STOPPED" {
-				return errors.New("Could not start new task")
-			}
-		}
-
-		time.Sleep(time.Duration(sleepTime) * time.Second)
-	}
-
-	return errors.New("Task " + newTask + " did not start in " + strconv.Itoa(attempts * sleepTime) + " seconds")
-}
-
-func _findNewTask(tasks, currentTasks []*string) string {
-	for i := 0; i < len(tasks); i++ {
-		for j := 0; j < len(currentTasks); j++ {
-			if *tasks[i] != *currentTasks[j] {
-				return *currentTasks[j]
-			}
-		}
-	}
-
-	return ""
 }
 
 func GetServiceArn(clusterArn, name string, svc *ecs.ECS) string {

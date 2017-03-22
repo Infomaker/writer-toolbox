@@ -54,3 +54,4 @@ writer-tool -h
     1.16     Fix for panic when listing ec2 instances where public IP is missing
     1.17     Added 'login' command for logging into ec2 instances using ssh
     1.18     Support for releasing multiple services at once and wait for them being completely updated before exising
+    1.18.1   Added 'releaseServices' command to completion

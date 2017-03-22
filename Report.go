@@ -97,7 +97,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 
 				realService := serviceDescription.Services[k];
 
-				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition);
+				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition, nil);
 				version, image := ExtractVersion(*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image)
 
 				for l := 0; l < len(realService.Deployments); l++ {

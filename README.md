@@ -1,15 +1,86 @@
 # writer-toolbox
-Tool for managing writer installations
+This is a tool for performing various writer operations from command line. The command contains bash-completions 
+for commands and values.
 
 ## How to build
     1. Set $GOPATH variable to your go src directory
     2. Issue: ./build.sh
+    
+## How to install
+```bash
+$ brew tap Infomaker/repo
+$ brew install writer-toolbox
+$ brew install bash-completion
+```
+
+### Prerequisites
+The AWS environment must have a user with enough privileges to perform the operations available in the writer-tool.
+Credentials for the user should be stored in a file, credentials.txt, in `~/.aws` directory
+
+```bash
+[default]
+aws_access_key_id = {AKIA...}
+aws_secret_access_key = {DV83453....}
+```
+
+Optionally, credentials may be specified using the `awsKey` and `awsSecretKey` options.
+
+```bash
+writer-tool -awsKey AKIA... -awsSecretKey DV83453...
+```
 
 ## How to use
 
-writer-tool -h
+```bash
+$ writer-tool -h
+```
 
-# Releases
+### Examples
+
+#### List EC2 instances
+```bash
+$ writer-tool -credentials credentials.txt -command listEc2Instances
+i-a6f3482a (52.51.119.155): internaloc-single
+i-92e3ca1a (52.51.18.157): writer
+i-7f1f8af3 (54.72.32.96): prod-writer
+```
+
+#### Describe a service
+```bash
+$ writer-tool -credentials credentials.txt -cluster dev-EditorService-cluster -service editor-service -command describeService
+Name [editor-service], Running: 1, Pending: 0, Desired: 1
+```
+
+#### Update a running service
+This command stop one task at the time, to force a new download of image from the docker registry. Useful for 
+updating a service running _latest_.
+
+```bash
+$ writer-tool -credentials credentials.txt -cluster dev-EditorService-cluster -service editor-service -command updateService
+Task: arn:aws:ecs:eu-west-1:187317280313:task/6073fd62-70d2-447e-ba9f-bdaf8eee1457
+  Stopped
+  Waiting for new task .... done
+  New task: arn:aws:ecs:eu-west-1:187317280313:task/5bafe279-c8fb-4b8e-bd8b-c69c6ce23fa5 ............ done
+Service [editor-service] is updated
+```
+
+#### Perform a thread dump on a Editor Service instance
+```bash
+$ writer-tool -credentials credentials.txt -command ssh -pemfile customer-pemfile.pem -instanceName editorservice 'docker exec $(docker ps -q | head -1) jstack 6' > target/dumps.txt 
+$ head -5 target/dumps.txt
+2016-05-25 09:17:39
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.92-b14 mixed mode):
+"qtp2001294156-2715" #2715 prio=5 os_prio=0 tid=0x00007f30e85af800 nid=0xb13 waiting on condition [0x00007f30c92f3000]
+   java.lang.Thread.State: TIMED_WAITING (parking)
+```
+
+#### Perform a curl operation to get HTTP status code from a service, executed on the remote host
+```bash
+$ writer-tool -command ssh -pemfile customer-pem.pem -instanceName editorservice 'curl --write-out %{http_code} --output /dev/null http://www.sunet.se'
+301
+```
+
+## Releases
 
     1.0      A service may be updated using the 'updateService' command
     1.1      Builds docker image of tool
@@ -55,3 +126,4 @@ writer-tool -h
     1.17     Added 'login' command for logging into ec2 instances using ssh
     1.18     Support for releasing multiple services at once and wait for them being completely updated before exising
     1.18.1   Added 'releaseServices' command to completion
+    1.18.2   Updated README.md

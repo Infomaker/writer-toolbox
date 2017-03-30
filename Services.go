@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"os"
 	"time"
 	"encoding/json"
 	"errors"
@@ -61,12 +60,7 @@ func _listServices(cluster string, svc *ecs.ECS) *ecs.ListServicesOutput {
 	}
 
 	resp, err := svc.ListServices(params)
-	if err != nil {
-		// Print the error, cast err to awserr.Error to get the Code and
-		// Message from an error.
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	assertError(err);
 
 	return resp
 }
@@ -100,9 +94,7 @@ func _describeService(clusterArn, serviceArn string, svc *ecs.ECS) *ecs.Describe
 	}
 
 	result, err := svc.DescribeServices(params)
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	return result
 }
@@ -139,9 +131,7 @@ func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc
 
 	registrationResult, err := svc.RegisterTaskDefinition(params)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	taskDefinitionArn := registrationResult.TaskDefinition.TaskDefinitionArn
 
@@ -165,9 +155,7 @@ func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.D
 
 	_, err := svc.UpdateService(params)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	_waitForUpdatedTaskDefinition(*clusterArn, *serviceArn, svc)
 }
@@ -300,9 +288,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 func UpdateService(clusterArn, serviceArn string) {
 	message, err := _updateService(clusterArn, serviceArn, nil, nil)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	fmt.Println(message)
 }
@@ -327,9 +313,7 @@ func UpdateServices(data []byte) {
 
 	err := json.Unmarshal(data, &updateConfig)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	messages := make(chan Report, len(updateConfig))
 
@@ -473,9 +457,7 @@ func ReleaseServices(version string, data []byte) {
 
 	err := json.Unmarshal(data, &updateConfig)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	messages := make(chan Report, len(updateConfig))
 
@@ -529,9 +511,7 @@ func _describeTaskDefinition(taskDefinitionName string, svc *ecs.ECS) *ecs.Descr
 
 	result, err := svc.DescribeTaskDefinition(params)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	return result
 }

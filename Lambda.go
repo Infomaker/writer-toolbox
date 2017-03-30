@@ -18,9 +18,7 @@ func _getLambdaFunctionAliasInfo(functionName, alias string) *lambda.AliasConfig
 
 	resp, err := svc.GetAlias(params);
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	return resp;
 }
@@ -35,9 +33,7 @@ func _getLambdaFunctionInfo(functionName, qualifier string) *lambda.FunctionConf
 
 	resp, err := svc.GetFunctionConfiguration(params);
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	return resp
 }
@@ -71,9 +67,7 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version string
 
 	fmt.Printf("Updated %s with shasum %s\n", *result.FunctionName, *result.CodeSha256)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	if publish {
 

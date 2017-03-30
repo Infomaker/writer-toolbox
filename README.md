@@ -80,6 +80,14 @@ $ writer-tool -command ssh -pemfile customer-pem.pem -instanceName editorservice
 301
 ```
 
+#### Genereate release notes for a version
+```bash
+$ curl  -u user:password -X POST -H "Content-Type: application/json" --data '{"jql":"project = WRIT AND fixVersion = 3.0.3","fields":["id","key","issuetype", "description"]}' https://jira.infomaker.se/rest/api/2/search > issues.json
+$ writer-tool -command createReleaseNotes -version 3.0.3 -reportConfig issues.json -reportTemplate someTemplate.filetype -dependenciesFile dependencies.json
+```
+
+
+
 ## Releases
 
     1.0      A service may be updated using the 'updateService' command

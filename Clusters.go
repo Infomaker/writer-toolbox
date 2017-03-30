@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"os"
 )
 
 func ClusterName(a *string) string {
@@ -30,14 +29,7 @@ func _listClusters(svc *ecs.ECS) *ecs.ListClustersOutput {
 	}
 
 	resp, err := svc.ListClusters(params)
-	if err != nil {
-		if err != nil {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-	}
+	assertError(err);
 
 	return resp
 }

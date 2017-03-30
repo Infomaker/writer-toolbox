@@ -72,9 +72,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 
 	err := json.Unmarshal(jsonData, &config)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	output := Output{}
 
@@ -148,14 +146,10 @@ func GenerateReport(jsonData []byte, templateFile string) {
 
 	reportTemplate, err := template.New("report").Parse(templateFile)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	err = reportTemplate.Execute(os.Stdout, output)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 }
 

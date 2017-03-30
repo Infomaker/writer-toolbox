@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/elb"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"unicode/utf8"
 )
@@ -19,13 +18,7 @@ func _listEc2Instances() *ec2.DescribeInstancesOutput {
 	}
 
 	resp, err := svc.DescribeInstances(params)
-	if err != nil {
-		// Print the error, cast err to awserr.Error to get the Code and
-		// Message from an error.
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
+	assertError(err);
 	return resp
 }
 
@@ -85,16 +78,12 @@ func GetEntity(loadBalancerId, entityId string) {
 		}
 		resp, err := http.Get(url)
 
-		if err != nil {
-			errState(err.Error())
-		}
+		assertError(err);
 
 		if resp.StatusCode == 200 {
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				errState(err.Error())
-			}
+			assertError(err);
 			fmt.Println(string(body))
 		} else {
 			fmt.Println(resp.StatusCode)
@@ -113,10 +102,7 @@ func _listLoadBalancers() *elb.DescribeLoadBalancersOutput {
 	params := &elb.DescribeLoadBalancersInput{}
 
 	resp, err := svc.DescribeLoadBalancers(params)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	assertError(err);
 
 	return resp
 }

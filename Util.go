@@ -55,14 +55,10 @@ func CreateDir(source, target string) string {
 
 func GetFileMode(path string) os.FileMode {
 	f, err := os.Open(path)
-	if err != nil {
-		errUsage(err.Error())
-	}
+	assertError(err);
 	defer f.Close()
 	fi, err := f.Stat()
-	if err != nil {
-		errUsage(err.Error())
-	}
+	assertError(err);
 	return fi.Mode()
 }
 

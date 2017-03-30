@@ -24,9 +24,7 @@ func _listFilesInS3Bucket(bucketName, prefix string) *s3.ListObjectsOutput {
 
 	resp, err := svc.ListObjects(params);
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	return resp;
 }
@@ -40,9 +38,7 @@ func _listS3Buckets() *s3.ListBucketsOutput {
 
 	resp, err := svc.ListBuckets(params);
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	return resp
 }
@@ -58,9 +54,7 @@ func _copyFileFromS3Bucket(bucket, filename string) *s3.GetObjectOutput {
 
 
 	resp, err := svc.GetObject(params)
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 	return resp;
 }
@@ -111,17 +105,13 @@ func CopyFileFromS3Bucket(bucketName, filename, output string) {
 
 	out, err :=os.Create(outFile)
 
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 
 
 	defer result.Body.Close()
 
 	fmt.Printf("Copying %s/%s to %s... ", bucketName, filename, output)
 	written, err := io.Copy(out, result.Body)
-	if err != nil {
-		errState(err.Error())
-	}
+	assertError(err);
 	fmt.Println("Done writing " + strconv.FormatInt(written, 10) + " bytes")
 }

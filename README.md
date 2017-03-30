@@ -135,3 +135,4 @@ $ writer-tool -command createReleaseNotes -version 3.0.3 -reportConfig issues.js
     1.18     Support for releasing multiple services at once and wait for them being completely updated before exising
     1.18.1   Added 'releaseServices' command to completion
     1.18.2   Updated README.md
+    1.19     Added createReleaseNotes command

@@ -80,13 +80,36 @@ $ writer-tool -command ssh -pemfile customer-pem.pem -instanceName editorservice
 301
 ```
 
-#### Genereate release notes for a version
+#### Generate release notes for a version
 ```bash
-$ curl  -u user:password -X POST -H "Content-Type: application/json" --data '{"jql":"project = WRIT AND fixVersion = 3.0.3","fields":["id","key","issuetype", "description"]}' https://jira.infomaker.se/rest/api/2/search > issues.json
+$ curl  -u user:password -X POST -H "Content-Type: application/json" --data '{"jql":"project = WRIT AND fixVersion = 3.0.3","fields":["id","key","issuetype", "summary"]}' https://jira.infomaker.se/rest/api/2/search > issues.json
 $ writer-tool -command createReleaseNotes -version 3.0.3 -reportConfig issues.json -reportTemplate someTemplate.filetype -dependenciesFile dependencies.json
 ```
 
+The config should look like
 
+```json
+{
+  "maxResults": 200,
+  "issuesUrl": "https://jira.infomaker.se/rest/api/2/search",
+  "jql": "project = WRIT AND fixVersion = 3.0",
+  "fields": [
+    "id",
+    "key",
+    "issuetype",
+    "summary"
+  ],
+  "username": "...Jira username...",
+  "password": "...Jira password..."
+}
+```
+Optionally, the IssueTypesSortOrder array may be specified. Default is
+
+```json
+{
+  "issuesTypeSortOrder": ["New Feature", "Task", "Bug", "Epic"]
+}
+```
 
 ## Releases
 

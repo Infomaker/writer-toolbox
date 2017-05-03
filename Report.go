@@ -96,22 +96,24 @@ func GenerateReport(jsonData []byte, templateFile string) {
 				realService := serviceDescription.Services[k];
 
 				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition, nil);
-				version, image := ExtractVersion(*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image)
+				for l := 0; l < len(taskDefinition.TaskDefinition.ContainerDefinitions); l++ {
+					version, image := ExtractVersion(*taskDefinition.TaskDefinition.ContainerDefinitions[l].Image)
 
-				for l := 0; l < len(realService.Deployments); l++ {
-					deployment := realService.Deployments[l];
-					url := service.Url;
+					for n := 0; n < len(realService.Deployments); n++ {
+						deployment := realService.Deployments[n];
+						url := service.Url;
 
-					outputItem := OutputItem{
-						Version: version,
-						Image:ExtractImageName(image),
-						TaskDefName:ExtractName(deployment.TaskDefinition),
-						Label:service.Label,
-						RunningCount:*deployment.RunningCount,
-						DesiredCount:*deployment.DesiredCount,
-						Url:url,
+						outputItem := OutputItem{
+							Version: version,
+							Image:ExtractImageName(image),
+							TaskDefName:ExtractName(deployment.TaskDefinition),
+							Label:service.Label,
+							RunningCount:*deployment.RunningCount,
+							DesiredCount:*deployment.DesiredCount,
+							Url:url,
+						}
+						outputTemplate.Services = append(outputTemplate.Services, outputItem)
 					}
-					outputTemplate.Services = append(outputTemplate.Services, outputItem)
 				}
 			}
 		}

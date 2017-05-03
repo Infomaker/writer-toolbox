@@ -15,7 +15,7 @@ import (
 // Build version variables
 var appVersion string
 
-var cluster, command, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
+var cluster, command, containerName, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
 awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias,
 bucket, filename, publish, updatesFile, dependenciesFile string
 var recursive, verbose, moreVerbose bool
@@ -31,6 +31,7 @@ type Auth struct {
 func init() {
 	flag.StringVar(&alias, "alias", "", "Lambda alias")
 	flag.StringVar(&bucket, "s3bucket", "", "The S3 bucket name.")
+	flag.StringVar(&containerName, "containerName", "", "The name of the container inside a task definition.")
 	flag.StringVar(&filename, "s3filename", "", "The S3 filename.")
 	flag.StringVar(&publish, "publish", "false", "Specifies if lambda function deployment should be published.")
 	flag.StringVar(&command, "command", "", "The command to use. The command 'help' displays available commands.")

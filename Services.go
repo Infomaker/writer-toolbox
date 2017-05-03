@@ -402,7 +402,30 @@ func _releaseService(clusterArn, serviceArn, version string, done chan Report, s
 
 	taskDefinitionName := *service.Services[0].TaskDefinition
 	taskDefinition := _describeTaskDefinition(taskDefinitionName, svc)
-	dockerImage := *taskDefinition.TaskDefinition.ContainerDefinitions[0].Image
+
+	containerIndex := 0
+
+	if (len(taskDefinition.TaskDefinition.ContainerDefinitions) > 1) {
+		if containerName == "" {
+			errorMessage := "Please specify containerName for service with multiple container definitions";
+			if (done != nil) {
+				done <- Report{Message: errorMessage, Success:false}
+			}
+			return "", errors.New(errorMessage)
+		}
+
+		containerIndex = getContainerIndexForName(taskDefinition.TaskDefinition.ContainerDefinitions, containerName)
+
+		if (containerIndex == -1) {
+			errorMessage := "No container named " + containerName + " found in task definition";
+			if (done != nil) {
+				done <- Report{Message: errorMessage, Success:false}
+			}
+			return "", errors.New(errorMessage)
+		}
+	}
+
+	dockerImage := *taskDefinition.TaskDefinition.ContainerDefinitions[containerIndex].Image
 	currentVersion, imagePart := ExtractVersion(dockerImage)
 
 	if (verboseLevel > 0) {
@@ -437,7 +460,7 @@ func _releaseService(clusterArn, serviceArn, version string, done chan Report, s
 		return "", errors.New(errMessage)
 	}
 
-	*taskDefinition.TaskDefinition.ContainerDefinitions[0].Image = imagePart + ":" + version
+	*taskDefinition.TaskDefinition.ContainerDefinitions[containerIndex].Image = imagePart + ":" + version
 
 	newTaskDefinitionArn := _createTaskDefinition(taskDefinition, svc)
 
@@ -450,6 +473,17 @@ func _releaseService(clusterArn, serviceArn, version string, done chan Report, s
 	}
 
 	return message, nil
+}
+
+func getContainerIndexForName(definitions []*ecs.ContainerDefinition, name string) int {
+	for i := 0; i < len(definitions); i++ {
+		definition := definitions[i]
+		if (*definition.Name == name) {
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 func ReleaseServices(version string, data []byte) {

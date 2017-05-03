@@ -56,7 +56,7 @@ _writertool() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     line="${COMP_LINE}"
-    opts="-alias -awsKey -awsSecretKey -cluster -command -credentials -dependenciesFile -functionName -instanceId -instanceName -loadBalancer \
+    opts="-alias -awsKey -awsSecretKey -cluster -command -containerName -credentials -dependenciesFile -functionName -instanceId -instanceName -loadBalancer \
     -output -p -pemfile -profile -publish -recursive -reportConfig -reportTemplate -s3bucket -s3filename -service -target -updatesFile -version -v -vv"
 
     case "${prev}" in

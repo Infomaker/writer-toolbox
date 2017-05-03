@@ -181,3 +181,4 @@ Syntax:
     1.18.2   Updated README.md
     1.19     Added createReleaseNotes command
     2.0      Changed createReleaseNotes to read from URL, specified by config file. See README.md for config
+    2.1      Added support for multiple container configurations inside a service, when generation report

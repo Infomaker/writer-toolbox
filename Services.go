@@ -294,12 +294,13 @@ func UpdateService(clusterArn, serviceArn string) {
 }
 
 type Update struct {
-	Cluster   string `json:"cluster"`
-	Service   string `json:"service"`
-	AwsKey    string `json:"awsKey"`
-	AwsSecret string `json:"awsSecret"`
-	Profile   string `json:"profile"`
-	Label     string `json:"label"`
+	Cluster       string `json:"cluster"`
+	Service       string `json:"service"`
+	AwsKey        string `json:"awsKey"`
+	AwsSecret     string `json:"awsSecret"`
+	Profile       string `json:"profile"`
+	Label         string `json:"label"`
+	ContainerName string `json:"containerName"`
 }
 
 type Report struct {
@@ -380,7 +381,7 @@ func DescribeService(clusterArn, serviceArn string) {
 }
 
 func ReleaseService(clusterArn, serviceArn, version string) {
-	message, err := _releaseService(clusterArn, serviceArn, version, nil, nil)
+	message, err := _releaseService(clusterArn, serviceArn, containerName, version, nil, nil)
 
 	if (err != nil) {
 		errState(err.Error())
@@ -389,7 +390,7 @@ func ReleaseService(clusterArn, serviceArn, version string) {
 	fmt.Println(message)
 }
 
-func _releaseService(clusterArn, serviceArn, version string, done chan Report, svc *ecs.ECS) (string, error) {
+func _releaseService(clusterArn, serviceArn, containerName, version string, done chan Report, svc *ecs.ECS) (string, error) {
 	service := _describeService(clusterArn, serviceArn, svc)
 
 	if len(service.Services) > 1 {
@@ -506,8 +507,12 @@ func ReleaseServices(version string, data []byte) {
 			svc := GetSvcForCredentials(config.AwsKey, config.AwsSecret, config.Profile)
 			clusterArn := GetClusterArn(config.Cluster, svc)
 			serviceArn := GetServiceArn(clusterArn, config.Service, svc)
-			fmt.Println(config.Label + ": Releasing service " + config.Service)
-			go _releaseService(clusterArn, serviceArn, version, messages, svc)
+			localContainerName := containerName
+			if (config.ContainerName != nil) {
+				localContainerName = config.ContainerName
+			}
+			fmt.Println(config.Label + ": Releasing service " + config.Service + ", containerName: " + localContainerName)
+			go _releaseService(clusterArn, serviceArn, localContainerName, version, messages, svc)
 		}
 	}
 

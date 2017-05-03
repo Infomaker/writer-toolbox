@@ -64,10 +64,37 @@ Task: arn:aws:ecs:eu-west-1:187317280313:task/6073fd62-70d2-447e-ba9f-bdaf8eee14
 Service [editor-service] is updated
 ```
 
-#### Perform a thread dump on a Editor Service instance
+#### Release a service
+The `releaseService` command updates the version of a running service, which means that the task definition is updated
+with the new version for the selected cluster and service. Should there be more than one container defined
+in the task definition, an additional `containerName` parameter must be specified.
+
 ```bash
+$ writer-tool -credentials credentials.txt -cluster dev-EditorService-cluster -service editor-service -command releaseService \
+  -version 1.1 -containerName editorservice
+```
+
+#### Release multiple services
+Multiple services may be released in simultaneously, using `releaseServices` command. This is done by specifying a 
+JSON file containing the services to be released. `containerName` is required for services containing multiple containers.
+
+Example config file `release.json`:
+```json
+[
+	{"label":"SDS","awsKey":"...","awsSecret":"...","cluster":"writer-cluster","service":"writer-service"},
+	{"label":"Tun","profile":"...","cluster":"writerCluster","service":"writerService","containerName":"writer"}
+]
+```
+
+Example command
+```bash
+$ writer-tool -version 1.2 -updatesFile release.json -command releaseServices
+```
+
+#### Perform a thread dump on a Editor Service instance
+```
 $ writer-tool -credentials credentials.txt -command ssh -pemfile customer-pemfile.pem -instanceName editorservice 'docker exec $(docker ps -q | head -1) jstack 6' > target/dumps.txt 
-$ head -5 target/dumps.txt
+$ head -4 target/dumps.txt
 2016-05-25 09:17:39
 Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.92-b14 mixed mode):
 "qtp2001294156-2715" #2715 prio=5 os_prio=0 tid=0x00007f30e85af800 nid=0xb13 waiting on condition [0x00007f30c92f3000]
@@ -85,7 +112,6 @@ $ writer-tool -command ssh -pemfile customer-pem.pem -instanceName editorservice
 $ curl  -u user:password -X POST -H "Content-Type: application/json" --data '{"jql":"project = WRIT AND fixVersion = 3.0.3","fields":["id","key","issuetype", "summary"]}' https://jira.infomaker.se/rest/api/2/search > issues.json
 $ writer-tool -command createReleaseNotes -version 3.0.3 -reportConfig issues.json -reportTemplate someTemplate.filetype -dependenciesFile dependencies.json
 ```
-
 
 ##### Report config file
 The config should look like
@@ -182,4 +208,5 @@ Syntax:
     1.19     Added createReleaseNotes command
     2.0      Changed createReleaseNotes to read from URL, specified by config file. See README.md for config
     2.1      Added support for multiple container configurations inside a service, when generation report
-    2.2      Addes support for releasing service defined in task definition with multiple containers
+    2.2      Added support for releasing service defined in task definition with multiple containers
+    2.2.1    Release service using json config now supports containerName

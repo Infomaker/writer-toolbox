@@ -86,6 +86,8 @@ $ curl  -u user:password -X POST -H "Content-Type: application/json" --data '{"j
 $ writer-tool -command createReleaseNotes -version 3.0.3 -reportConfig issues.json -reportTemplate someTemplate.filetype -dependenciesFile dependencies.json
 ```
 
+
+##### Report config file
 The config should look like
 
 ```json
@@ -109,6 +111,25 @@ Optionally, the IssueTypesSortOrder array may be specified. Default is
 {
   "issuesTypeSortOrder": ["New Feature", "Task", "Bug", "Epic"]
 }
+```
+
+##### Dependencies file
+
+The dependencies file specifies the dependencies and their versions for a service for it to function
+
+Syntax:
+
+```json
+[
+    {
+      "dependency" : "Editor Service",
+      "versions" : [ "> 3.2", " <= 3.3.1"]
+    },
+    {
+      "dependency" : "Concept backend",
+      "versions" : [ ">= 1.0" , "< 2.0"]
+    }
+]
 ```
 
 ## Releases

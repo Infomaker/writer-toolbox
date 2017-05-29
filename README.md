@@ -210,3 +210,4 @@ Syntax:
     2.1      Added support for multiple container configurations inside a service, when generation report
     2.2      Added support for releasing service defined in task definition with multiple containers
     2.2.1    Release service using json config now supports containerName
+    2.2.1.1  Fixed compilation issue for release 2.2.1

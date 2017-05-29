@@ -508,7 +508,7 @@ func ReleaseServices(version string, data []byte) {
 			clusterArn := GetClusterArn(config.Cluster, svc)
 			serviceArn := GetServiceArn(clusterArn, config.Service, svc)
 			localContainerName := containerName
-			if (config.ContainerName != nil) {
+			if (config.ContainerName != "") {
 				localContainerName = config.ContainerName
 			}
 			fmt.Println(config.Label + ": Releasing service " + config.Service + ", containerName: " + localContainerName)

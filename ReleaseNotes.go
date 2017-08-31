@@ -61,7 +61,19 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, dependencies
 	var dependencies []Dependencies
 	var config ConfigContainer
 
-	err := json.Unmarshal(configData, &config)
+	configInfo, err2 := template.New("hello").Parse(string(configData))
+	assertError(err2)
+
+	processedConfig := new(bytes.Buffer)
+
+	type ConfigData struct {
+		Version string
+	}
+
+	err3 := configInfo.Execute(processedConfig, ConfigData{ Version: version})
+	assertError(err3)
+
+	err := json.Unmarshal(processedConfig.Bytes(), &config)
 	assertError(err);
 
 	issues := getIssuesFromUrl(config)

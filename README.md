@@ -211,3 +211,4 @@ Syntax:
     2.2      Added support for releasing service defined in task definition with multiple containers
     2.2.1    Release service using json config now supports containerName
     2.2.1.1  Fixed compilation issue for release 2.2.1
+    2.3      Added suppport for {{version}} variable in -releaseConfig file

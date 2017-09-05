@@ -67,15 +67,16 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, dependencies
 	processedConfig := new(bytes.Buffer)
 
 	type ConfigData struct {
-		Version string
+		Version  string
+		Login    string
+		Password string
 	}
 
-	err3 := configInfo.Execute(processedConfig, ConfigData{ Version: version})
+	err3 := configInfo.Execute(processedConfig, ConfigData{Version: version, Login: login, Password: password})
 	assertError(err3)
 
 	err := json.Unmarshal(processedConfig.Bytes(), &config)
 	assertError(err);
-
 	issues := getIssuesFromUrl(config)
 
 	if (dependenciesData != "") {
@@ -84,8 +85,8 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, dependencies
 	}
 
 	var output = OutputData{
-		Version: version,
-		IssueTypes: make(map[string][]Issues),
+		Version:      version,
+		IssueTypes:   make(map[string][]Issues),
 		Dependencies: dependencies,
 	}
 
@@ -118,7 +119,6 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, dependencies
 
 	reportTemplate, err := template.New("report").Parse(templateFile)
 	assertError(err);
-
 	err = reportTemplate.Execute(os.Stdout, output)
 	assertError(err);
 }
@@ -135,8 +135,8 @@ func getIssuesFromUrl(config ConfigContainer) []Issues {
 	}
 
 	var data = JsonData{
-		Jql: config.Jql,
-		Fields: config.Fields,
+		Jql:        config.Jql,
+		Fields:     config.Fields,
 		MaxResults: config.MaxResults,
 	}
 
@@ -151,7 +151,6 @@ func getIssuesFromUrl(config ConfigContainer) []Issues {
 
 	resp, err := http.DefaultClient.Do(req)
 	assertError(err);
-
 	defer resp.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(resp.Body)

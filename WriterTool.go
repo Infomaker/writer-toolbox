@@ -17,7 +17,7 @@ var appVersion string
 
 var cluster, command, containerName, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
 awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias,
-bucket, filename, publish, updatesFile, dependenciesFile string
+bucket, filename, publish, updatesFile, dependenciesFile, login, password string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -43,6 +43,8 @@ func init() {
 	flag.StringVar(&sshPem, "pemfile", "", "Specify PEM file for SSH access")
 	flag.BoolVar(&recursive, "recursive", false, "Specify recursive operation")
 	flag.StringVar(&output, "output", "", "Specify output directory")
+	flag.StringVar(&login, "login", "", "Specify login for external service")
+	flag.StringVar(&password, "password", "", "Specify password for external service")
 	flag.StringVar(&credentialsFile, "credentials", "", "Specify credentials used for accessing AWS. Should be of format: .aws/credentials")
 	flag.StringVar(&profile, "profile", "", "Specify profile for ./aws/credentials file used for accessing AWS.")
 	flag.StringVar(&profile, "p", "", "Specify profile for ./aws/credentials file used for accessing AWS.")

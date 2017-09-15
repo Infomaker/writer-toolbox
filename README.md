@@ -214,3 +214,4 @@ Syntax:
     2.3      Added suppport for {{version}} variable in -releaseConfig file
     2.4      Added -login and -password flags for release notes generation
     2.4.1    Encoded html entities are un-escaped when generating release notes
+    2.5      Added flag -releaseDate which can be used in release note generation as variable .releaseDate

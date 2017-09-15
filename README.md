@@ -213,3 +213,4 @@ Syntax:
     2.2.1.1  Fixed compilation issue for release 2.2.1
     2.3      Added suppport for {{version}} variable in -releaseConfig file
     2.4      Added -login and -password flags for release notes generation
+    2.4.1    Encoded html entities are un-escaped when generating release notes

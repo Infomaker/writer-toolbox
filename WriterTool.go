@@ -16,7 +16,7 @@ import (
 var appVersion string
 
 var cluster, command, containerName, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
-awsKey, awsSecretKey, version, loadBalancer, reportJson, reportTemplate, functionName, alias,
+awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, functionName, alias,
 bucket, filename, publish, updatesFile, dependenciesFile, login, password string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
@@ -51,6 +51,7 @@ func init() {
 	flag.StringVar(&awsKey, "awsKey", "", "AWS key used for authentication. Overrides credentials file")
 	flag.StringVar(&awsSecretKey, "awsSecretKey", "", "AWS secret key used for authentication, used in conjunction with 'awsKey'")
 	flag.StringVar(&version, "version", "", "The version to use for docker image in the task definition")
+	flag.StringVar(&releaseDate, "releaseDate", "", "The date for a release, used in release notes generation")
 	flag.StringVar(&loadBalancer, "loadBalancer", "", "Specifies the load balancer name to use")
 	flag.StringVar(&reportJson, "reportConfig", "", "Filename for the JSON file containing report configuration")
 	flag.StringVar(&reportTemplate, "reportTemplate", "", "Filename for the template that produces the report")

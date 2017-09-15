@@ -13,23 +13,23 @@ import (
 // Config structs
 
 type ConfigContainer struct {
-	IssuesUrl           string `json:"issuesUrl"`
-	Jql                 string `json:"jql"`
+	IssuesUrl           string   `json:"issuesUrl"`
+	Jql                 string   `json:"jql"`
 	Fields              []string `json:"fields"`
-	HighlightField      string `json:"highlightField"`
-	HeadsUpField        string `json:"headsUpField"`
-	MaxResults          int64 `json:"maxResults"`
-	Username            string `json:"username"`
-	Password            string `json:"password"`
+	HighlightField      string   `json:"highlightField"`
+	HeadsUpField        string   `json:"headsUpField"`
+	MaxResults          int64    `json:"maxResults"`
+	Username            string   `json:"username"`
+	Password            string   `json:"password"`
 	IssueTypesSortOrder []string `json:"issueTypesSortOrder"`
 }
 
 // Issues imports structs
 
 type IssuesJson struct {
-	StartAt   int64 `json:"startAt"`
-	MaxResult int64 `json:"maxResults"`
-	Total     int64 `json:"total"`
+	StartAt   int64    `json:"startAt"`
+	MaxResult int64    `json:"maxResults"`
+	Total     int64    `json:"total"`
 	Issues    []Issues `json:"issues"`
 }
 
@@ -47,17 +47,18 @@ type Fields interface {
 // --- Output structs
 type OutputData struct {
 	Version             string
+	ReleaseDate         string
 	IssueTypes          map[string][]Issues
 	Dependencies        []Dependencies
 	IssueTypesSortOrder []string
 }
 
 type Dependencies struct {
-	Dependency string `json:"dependency"`
+	Dependency string   `json:"dependency"`
 	Versions   []string `json:"versions"`
 }
 
-func GenerateReleaseNotes(configData []byte, templateFile, version, dependenciesData string) {
+func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate, dependenciesData string) {
 
 	var dependencies []Dependencies
 	var config ConfigContainer
@@ -87,6 +88,7 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, dependencies
 
 	var output = OutputData{
 		Version:      version,
+		ReleaseDate:  releaseDate,
 		IssueTypes:   make(map[string][]Issues),
 		Dependencies: dependencies,
 	}
@@ -134,12 +136,13 @@ func getDefaultSortOrder() []string {
 	return []string{"New Feature", "Task", "Bug", "Epic"}
 }
 
+
 func getIssuesFromUrl(config ConfigContainer) []Issues {
 
 	type JsonData struct {
-		Jql        string `json:"jql"`
+		Jql        string   `json:"jql"`
 		Fields     []string `json:"fields"`
-		MaxResults int64 `json:"maxResults"`
+		MaxResults int64    `json:"maxResults"`
 	}
 
 	var data = JsonData{

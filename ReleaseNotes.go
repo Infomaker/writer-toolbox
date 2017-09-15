@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"html/template"
-	"os"
 	"net/http"
 	"bytes"
 	"io/ioutil"
+	"fmt"
+	"html"
 )
 
 // Config structs
@@ -119,9 +120,16 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, dependencies
 
 	reportTemplate, err := template.New("report").Parse(templateFile)
 	assertError(err);
-	err = reportTemplate.Execute(os.Stdout, output)
+
+	var out bytes.Buffer
+	err = reportTemplate.Execute(&out, output)
+
+	fmt.Println(html.UnescapeString(out.String()))
+
 	assertError(err);
 }
+
+
 func getDefaultSortOrder() []string {
 	return []string{"New Feature", "Task", "Bug", "Epic"}
 }

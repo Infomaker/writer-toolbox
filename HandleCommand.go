@@ -15,9 +15,11 @@ func printCommandHelp() {
 			"                         -output       : The target directory   (required)\n" +
 			"                         Example: -command copyFileFromS3Bucket -s3bucket images -s3filename cat.gif -output ~/Downloads",
 		"createReleaseNotes": "Create release notes document from Jira issues. Needs -reportConfig and -reportTemplate. Optional to use -dependenciesFile\n" +
-		"                         -reportConfig      : The configuration file used to fetch issues from Jira   (required)\n" +
+		"                             -reportConfig      : The configuration file used to fetch issues from Jira   (required)\n" +
 			"                         -reportTemplate    : Transforms jira issues into release notes file   (required)\n" +
 			"                         -dependenciesFile  : Specifies dependencies for service, used in template\n" +
+			"                         -version           : Specifies the version that is released. Can be used in template as .Version\n" +
+			"                         -releaseDate       : Specifies the release date. Can be used in template as .ReleaseDate\n" +
 			"                         -login             : Jira login\n" +
 			"                         -password          : Jira password\n",
 		"createReport":        "Generates a report of running services. Needs -reportConfig and -reportTemplate",
@@ -118,7 +120,7 @@ func executeCommand() {
 		template := _readTemplateFromFile();
 		version := _getVersion()
 		dependencies := _readDependenciesFromFile();
-		GenerateReleaseNotes(bytes, template, version, dependencies)
+		GenerateReleaseNotes(bytes, template, version, releaseDate, dependencies)
 	case "createReport":
 		bytes := _readConfigFromFile();
 		template := _readTemplateFromFile();

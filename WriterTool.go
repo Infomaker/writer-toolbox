@@ -22,6 +22,7 @@ var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
 var verboseLevel = 0
+var maxResult int64
 
 type Auth struct {
 	key    string `toml:"aws_access_key_id"`
@@ -29,6 +30,7 @@ type Auth struct {
 }
 
 func init() {
+	flag.Int64Var(&maxResult, "maxResults", 100, "Max items to return in list operations")
 	flag.StringVar(&alias, "alias", "", "Lambda alias")
 	flag.StringVar(&bucket, "s3bucket", "", "The S3 bucket name.")
 	flag.StringVar(&containerName, "containerName", "", "The name of the container inside a task definition.")

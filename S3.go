@@ -14,19 +14,33 @@ import (
 func _listFilesInS3Bucket(bucketName, prefix string) *s3.ListObjectsOutput {
 	svc := s3.New(session.New(), _getAwsConfig())
 
-	params := &s3.ListObjectsInput{
-		Bucket: aws.String(bucketName),
+	var marker = new(string)
+	var result = new(s3.ListObjectsOutput)
+
+	for result != nil && len(result.Contents) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
+
+		params := &s3.ListObjectsInput{
+			Bucket:  aws.String(bucketName),
+			MaxKeys: &maxResult,
+			Marker:marker,
+		}
+
+		if prefix != "" {
+			params.Prefix = aws.String(prefix)
+		}
+
+		resp, err := svc.ListObjects(params);
+		assertError(err);
+
+		result.Contents = append(resp.Contents)
+
+		marker = resp.NextMarker
 	}
 
-	if prefix != "" {
-		params.Prefix = aws.String(prefix)
-	}
-
-	resp, err := svc.ListObjects(params);
-
-	assertError(err);
-
-	return resp;
+	return result;
 }
 
 func _listS3Buckets() *s3.ListBucketsOutput {
@@ -37,25 +51,20 @@ func _listS3Buckets() *s3.ListBucketsOutput {
 	}
 
 	resp, err := svc.ListBuckets(params);
-
 	assertError(err);
-
 	return resp
 }
-
 
 func _copyFileFromS3Bucket(bucket, filename string) *s3.GetObjectOutput {
 	svc := s3.New(session.New(), _getAwsConfig())
 
 	params := &s3.GetObjectInput{
-		Key: aws.String(filename),
+		Key:    aws.String(filename),
 		Bucket: aws.String(bucket),
 	}
 
-
 	resp, err := svc.GetObject(params)
 	assertError(err);
-
 	return resp;
 }
 
@@ -64,7 +73,6 @@ func ListS3Buckets() {
 
 	for i := 0; i < len(buckets.Buckets); i++ {
 		bucket := buckets.Buckets[i];
-
 		if (verboseLevel > 0) {
 			fmt.Printf("%s   %s\n", bucket.CreationDate.Format("2006-01-02 15:04:05 -0700 MST"), *bucket.Name)
 		} else {
@@ -103,11 +111,9 @@ func CopyFileFromS3Bucket(bucketName, filename, output string) {
 
 	outFile := path.Join(output, filename)
 
-	out, err :=os.Create(outFile)
+	out, err := os.Create(outFile)
 
 	assertError(err);
-
-
 	defer result.Body.Close()
 
 	fmt.Printf("Copying %s/%s to %s... ", bucketName, filename, output)

@@ -57,7 +57,8 @@ _writertool() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     line="${COMP_LINE}"
     opts="-alias -awsKey -awsSecretKey -cluster -command -containerName -credentials -dependenciesFile -functionName -instanceId -instanceName -loadBalancer -login \
-    -output -p -password -pemfile -profile -publish -recursive -releaseDate -reportConfig -reportTemplate -s3bucket -s3filename -service -target -updatesFile -version -v -vv"
+     -maxResult -output -p -password -pemfile -profile -publish -recursive -releaseDate -reportConfig -reportTemplate -s3bucket -s3filename -service -target \
+     -updatesFile -version -v -vv"
 
     case "${prev}" in
         -cluster)

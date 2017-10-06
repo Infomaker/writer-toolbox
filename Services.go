@@ -55,14 +55,30 @@ func _listServices(cluster string, svc *ecs.ECS) *ecs.ListServicesOutput {
 		svc = ecs.New(session.New(), _getAwsConfig())
 	}
 
-	params := &ecs.ListServicesInput{
-		Cluster:    aws.String(cluster),
+	var marker = new(string)
+
+	var result = new(ecs.ListServicesOutput)
+
+	for marker != nil && len(result.ServiceArns) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
+
+		params := &ecs.ListServicesInput{
+			Cluster:    aws.String(cluster),
+			NextToken:  marker,
+			MaxResults: &maxResult,
+		}
+
+		resp, err := svc.ListServices(params)
+
+		assertError(err);
+		result.ServiceArns = append(result.ServiceArns, resp.ServiceArns...)
+
+		marker = resp.NextToken
 	}
 
-	resp, err := svc.ListServices(params)
-	assertError(err);
-
-	return resp
+	return result
 }
 
 func _listTasks(cluster, service string, svc *ecs.ECS) (*ecs.ListTasksOutput, error) {
@@ -70,17 +86,33 @@ func _listTasks(cluster, service string, svc *ecs.ECS) (*ecs.ListTasksOutput, er
 		svc = ecs.New(session.New(), _getAwsConfig())
 	}
 
-	params := &ecs.ListTasksInput{
-		Cluster:     aws.String(cluster),
-		ServiceName: aws.String(service),
+	var marker = new(string)
+
+	var result = new(ecs.ListTasksOutput)
+
+	for marker != nil && len(result.TaskArns) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
+
+		params := &ecs.ListTasksInput{
+			Cluster:     aws.String(cluster),
+			ServiceName: aws.String(service),
+			MaxResults:  &maxResult,
+		}
+
+		resp, err := svc.ListTasks(params)
+
+		if err != nil {
+			return nil, err
+		}
+
+		result.TaskArns = append(result.TaskArns, resp.TaskArns...)
+
+		marker = result.NextToken
 	}
 
-	resp, err := svc.ListTasks(params)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return result, nil
 }
 
 func _describeService(clusterArn, serviceArn string, svc *ecs.ECS) *ecs.DescribeServicesOutput {
@@ -95,7 +127,6 @@ func _describeService(clusterArn, serviceArn string, svc *ecs.ECS) *ecs.Describe
 
 	result, err := svc.DescribeServices(params)
 	assertError(err);
-
 	return result
 }
 
@@ -132,7 +163,6 @@ func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc
 	registrationResult, err := svc.RegisterTaskDefinition(params)
 
 	assertError(err);
-
 	taskDefinitionArn := registrationResult.TaskDefinition.TaskDefinitionArn
 
 	return *taskDefinitionArn
@@ -156,7 +186,6 @@ func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.D
 	_, err := svc.UpdateService(params)
 
 	assertError(err);
-
 	_waitForUpdatedTaskDefinition(*clusterArn, *serviceArn, svc)
 }
 
@@ -169,7 +198,6 @@ func _waitForUpdatedTaskDefinition(cluster string, service string, svc *ecs.ECS)
 	for i := 0; i < attempts; i++ {
 
 		currentService := _describeService(cluster, service, svc);
-
 		for j := 0; j < len(currentService.Services); j++ {
 			item := currentService.Services[j]
 
@@ -185,7 +213,7 @@ func _waitForUpdatedTaskDefinition(cluster string, service string, svc *ecs.ECS)
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
 
-	return errors.New("Task " + newTask + " did not start in " + strconv.Itoa(attempts * sleepTime) + " seconds")
+	return errors.New("Task " + newTask + " did not start in " + strconv.Itoa(attempts*sleepTime) + " seconds")
 
 }
 
@@ -236,7 +264,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	tasks, err := _listTasks(clusterArn, serviceArn, svc)
 	if (err != nil) {
 		if (done != nil) {
-			done <- Report{Message:err.Error(), Success:false}
+			done <- Report{Message: err.Error(), Success: false}
 		}
 		return "", err
 	}
@@ -245,7 +273,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	if len(service.Services) > 1 {
 		errMessage := "No support for multiple services"
 		if (done != nil) {
-			done <- Report{Message: errMessage, Success:false}
+			done <- Report{Message: errMessage, Success: false}
 		}
 		return "", errors.New(errMessage)
 	}
@@ -255,7 +283,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	if len(tasks.TaskArns) < int(desiredCount) {
 		errorMessage := "The number of actual tasks " + strconv.Itoa(len(tasks.TaskArns)) + " differs from desired tasks " + strconv.FormatInt(desiredCount, 10)
 		if (done != nil) {
-			done <- Report{Message:errorMessage, Success:false}
+			done <- Report{Message: errorMessage, Success: false}
 		}
 		return "", errors.New(errorMessage)
 	}
@@ -264,14 +292,14 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 		err = _stopTask(clusterArn, *tasks.TaskArns[i], svc)
 		if err != nil {
 			if (done != nil) {
-				done <- Report{Message:err.Error(), Success:false}
+				done <- Report{Message: err.Error(), Success: false}
 			}
 			return "", err
 		}
 		err = _waitForUpdatedTaskDefinition(clusterArn, serviceArn, svc)
 		if err != nil {
 			if (done != nil) {
-				done <- Report{Message:err.Error(), Success:false}
+				done <- Report{Message: err.Error(), Success: false}
 			}
 			return "", err
 		}
@@ -279,7 +307,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	message := "Service " + *service.Services[0].ServiceName + " is updated"
 
 	if done != nil {
-		done <- Report{Message:message, Success:true}
+		done <- Report{Message: message, Success: true}
 	}
 
 	return message, nil
@@ -289,7 +317,6 @@ func UpdateService(clusterArn, serviceArn string) {
 	message, err := _updateService(clusterArn, serviceArn, nil, nil)
 
 	assertError(err);
-
 	fmt.Println(message)
 }
 
@@ -315,7 +342,6 @@ func UpdateServices(data []byte) {
 	err := json.Unmarshal(data, &updateConfig)
 
 	assertError(err);
-
 	messages := make(chan Report, len(updateConfig))
 
 	fmt.Printf("Performing update on %d services.\n", len(updateConfig))
@@ -323,7 +349,7 @@ func UpdateServices(data []byte) {
 	for i := 0; i < len(updateConfig); i++ {
 		config := updateConfig[i]
 		if (config.AwsKey == "" && config.Profile == "") {
-			messages <- Report{Message:config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success:false}
+			messages <- Report{Message: config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success: false}
 		} else {
 			svc := GetSvcForCredentials(config.AwsKey, config.AwsSecret, config.Profile)
 			clusterArn := GetClusterArn(config.Cluster, svc)
@@ -396,7 +422,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 	if len(service.Services) > 1 {
 		errorMessage := *service.Services[0].ServiceName + " No support for multiple services"
 		if (done != nil) {
-			done <- Report{Message: errorMessage, Success:false}
+			done <- Report{Message: errorMessage, Success: false}
 		}
 		return "", errors.New(errorMessage)
 	}
@@ -410,7 +436,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 		if containerName == "" {
 			errorMessage := "Please specify containerName for service with multiple container definitions";
 			if (done != nil) {
-				done <- Report{Message: errorMessage, Success:false}
+				done <- Report{Message: errorMessage, Success: false}
 			}
 			return "", errors.New(errorMessage)
 		}
@@ -420,7 +446,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 		if (containerIndex == -1) {
 			errorMessage := "No container named " + containerName + " found in task definition";
 			if (done != nil) {
-				done <- Report{Message: errorMessage, Success:false}
+				done <- Report{Message: errorMessage, Success: false}
 			}
 			return "", errors.New(errorMessage)
 		}
@@ -439,7 +465,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 	if version == currentVersion {
 		errMessage := *service.Services[0].ServiceName + " Specified version is already deployed!"
 		if (done != nil) {
-			done <- Report{Message: errMessage, Success:false}
+			done <- Report{Message: errMessage, Success: false}
 		}
 		return "", errors.New(errMessage)
 	}
@@ -452,11 +478,11 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 		fmt.Printf("HealthyPercentage [%d], DesiredCount [%d] -> Number of running instances during deployment [%d] ... ", minimumHealthyPercentage, desiredCount, minimumHealthyCount)
 	}
 
-	if desiredCount - minimumHealthyCount == 0 {
+	if desiredCount-minimumHealthyCount == 0 {
 
 		errMessage := *service.Services[0].ServiceName + " Not possible to deploy because of too high healthy percentage"
 		if (done != nil) {
-			done <- Report{Message: errMessage, Success:false}
+			done <- Report{Message: errMessage, Success: false}
 		}
 		return "", errors.New(errMessage)
 	}
@@ -470,7 +496,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 	message := "Service " + *service.Services[0].ServiceName + " is released with version " + version
 
 	if done != nil {
-		done <- Report{Message:message, Success:true}
+		done <- Report{Message: message, Success: true}
 	}
 
 	return message, nil
@@ -493,7 +519,6 @@ func ReleaseServices(version string, data []byte) {
 	err := json.Unmarshal(data, &updateConfig)
 
 	assertError(err);
-
 	messages := make(chan Report, len(updateConfig))
 
 	fmt.Printf("Performing release to %s on %d services\n", version, len(updateConfig))
@@ -502,7 +527,7 @@ func ReleaseServices(version string, data []byte) {
 		config := updateConfig[i]
 
 		if (config.AwsKey == "" && config.Profile == "") {
-			messages <- Report{Message:config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success:false}
+			messages <- Report{Message: config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success: false}
 		} else {
 			svc := GetSvcForCredentials(config.AwsKey, config.AwsSecret, config.Profile)
 			clusterArn := GetClusterArn(config.Cluster, svc)
@@ -551,7 +576,6 @@ func _describeTaskDefinition(taskDefinitionName string, svc *ecs.ECS) *ecs.Descr
 	result, err := svc.DescribeTaskDefinition(params)
 
 	assertError(err);
-
 	return result
 }
 

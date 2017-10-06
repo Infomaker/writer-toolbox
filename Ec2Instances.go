@@ -14,12 +14,28 @@ import (
 func _listEc2Instances() *ec2.DescribeInstancesOutput {
 	svc := ec2.New(session.New(), _getAwsConfig())
 
-	params := &ec2.DescribeInstancesInput{
+	var marker = new(string)
+
+	var result = new(ec2.DescribeInstancesOutput)
+
+	for marker != nil && len(result.Reservations) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
+
+		params := &ec2.DescribeInstancesInput{
+			NextToken: marker,
+			MaxResults: &maxResult,
+		}
+
+		resp, err := svc.DescribeInstances(params)
+		assertError(err);
+		result.Reservations = append(result.Reservations, resp.Reservations...)
+
+		marker = resp.NextToken
 	}
 
-	resp, err := svc.DescribeInstances(params)
-	assertError(err);
-	return resp
+	return result
 }
 
 func ListEc2Instances() {
@@ -35,7 +51,7 @@ func ListEc2Instances() {
 					if (instance.PublicIpAddress != nil) {
 						fmt.Printf("%s %s %s: %s \n", tabs(18, *instance.PublicIpAddress), tabs(30, _getName(instance.Tags)), *instance.InstanceId, *instance.State.Name)
 					} else if (instance.PrivateIpAddress != nil) {
-						fmt.Printf("%s %s %s: %s \n", tabs(18, "(" + *instance.PrivateIpAddress + ")"), tabs(30, _getName(instance.Tags)), *instance.InstanceId, *instance.State.Name)
+						fmt.Printf("%s %s %s: %s \n", tabs(18, "(" + *instance.PrivateIpAddress+")"), tabs(30, _getName(instance.Tags)), *instance.InstanceId, *instance.State.Name)
 					} else {
 						fmt.Printf("%s, %s: %s \n", _getName(instance.Tags), *instance.InstanceId, *instance.State.Name)
 					}
@@ -50,7 +66,7 @@ func ListEc2Instances() {
 }
 
 func tabs(size int, output string) string {
-	return output + strings.Repeat(" ", max(1, size - utf8.RuneCountInString(output)))
+	return output + strings.Repeat(" ", max(1, size-utf8.RuneCountInString(output)))
 }
 
 func max(a, b int) int {
@@ -79,7 +95,6 @@ func GetEntity(loadBalancerId, entityId string) {
 		resp, err := http.Get(url)
 
 		assertError(err);
-
 		if resp.StatusCode == 200 {
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
@@ -99,12 +114,25 @@ func GetEntity(loadBalancerId, entityId string) {
 func _listLoadBalancers() *elb.DescribeLoadBalancersOutput {
 	svc := elb.New(session.New(), _getAwsConfig())
 
-	params := &elb.DescribeLoadBalancersInput{}
+	var marker = new(string)
 
-	resp, err := svc.DescribeLoadBalancers(params)
-	assertError(err);
+	var result = new(elb.DescribeLoadBalancersOutput)
 
-	return resp
+	for marker != nil && len(result.LoadBalancerDescriptions) < int(maxResult) {
+		params := &elb.DescribeLoadBalancersInput{
+			Marker:marker,
+		}
+
+		resp, err := svc.DescribeLoadBalancers(params)
+
+		assertError(err);
+
+		result.LoadBalancerDescriptions = append(result.LoadBalancerDescriptions, resp.LoadBalancerDescriptions...)
+
+		marker = result.NextMarker
+	}
+
+	return result
 }
 
 func ListLoadBalancers() {

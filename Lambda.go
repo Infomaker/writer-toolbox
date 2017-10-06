@@ -8,59 +8,79 @@ import (
 	"strconv"
 )
 
+func _getSession() *session.Session {
+	result, err := session.NewSession()
+
+	assertError(err)
+
+	return result
+}
+
 func _getLambdaFunctionAliasInfo(functionName, alias string) *lambda.AliasConfiguration {
-	svc := lambda.New(session.New(), _getAwsConfig())
+	svc := lambda.New(_getSession(), _getAwsConfig())
 
 	params := &lambda.GetAliasInput{
 		FunctionName: aws.String(functionName),
-		Name: aws.String(alias),
+		Name:         aws.String(alias),
 	}
 
 	resp, err := svc.GetAlias(params);
-
 	assertError(err);
-
 	return resp;
 }
 
 func _getLambdaFunctionInfo(functionName, qualifier string) *lambda.FunctionConfiguration {
-	svc := lambda.New(session.New(), _getAwsConfig())
+	svc := lambda.New(_getSession(), _getAwsConfig())
 
 	params := &lambda.GetFunctionConfigurationInput{
 		FunctionName: aws.String(functionName),
-		Qualifier: aws.String(qualifier),
+		Qualifier:    aws.String(qualifier),
 	}
 
 	resp, err := svc.GetFunctionConfiguration(params);
-
 	assertError(err);
-
 	return resp
 }
 
 func _listLambdaFunctions() *lambda.ListFunctionsOutput {
-	svc := lambda.New(session.New(), _getAwsConfig())
+	svc := lambda.New(_getSession(), _getAwsConfig())
 
-	params := &lambda.ListFunctionsInput{
+	var marker = new(string)
 
+	var result = new(lambda.ListFunctionsOutput)
+
+	for marker != nil && len(result.Functions) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
+
+		params := &lambda.ListFunctionsInput{
+			Marker: marker,
+			MaxItems: &maxResult,
+		}
+
+		resp, err := svc.ListFunctions(params)
+
+		assertError(err)
+
+		result.Functions = append(result.Functions, resp.Functions...)
+
+		marker = resp.NextMarker
 	}
 
-	resp, err := svc.ListFunctions(params)
-
-	if (err != nil) {
-		errState(err.Error())
-	}
-
-	return resp
+	return result
 }
 
+
+
+
 func _deployLambdaFunction(functionName, bucket, filename, alias, version string, publish bool) {
-	svc := lambda.New(session.New(), _getAwsConfig())
+	svc := lambda.New(_getSession(), _getAwsConfig())
 
 	params := &lambda.UpdateFunctionCodeInput{
 		FunctionName: aws.String(functionName),
-		S3Bucket: aws.String(bucket),
-		S3Key: aws.String(filename),
+		S3Bucket:     aws.String(bucket),
+		S3Key:        aws.String(filename),
 	}
 
 	result, err := svc.UpdateFunctionCode(params)
@@ -68,25 +88,23 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version string
 	fmt.Printf("Updated %s with shasum %s\n", *result.FunctionName, *result.CodeSha256)
 
 	assertError(err);
-
 	if publish {
 
 		params := &lambda.PublishVersionInput{
 			FunctionName: aws.String(functionName),
-			CodeSha256: aws.String(*result.CodeSha256),
-			Description: aws.String(version),
+			CodeSha256:   aws.String(*result.CodeSha256),
+			Description:  aws.String(version),
 		}
 
 		published, errP := svc.PublishVersion(params);
-
 		if errP != nil {
 			errState(errP.Error())
 		}
 
 		paramsU := &lambda.UpdateAliasInput{
-			FunctionName: aws.String(functionName),
+			FunctionName:    aws.String(functionName),
 			FunctionVersion: aws.String(*published.Version),
-			Name: aws.String(alias),
+			Name:            aws.String(alias),
 		}
 
 		_, errU := svc.UpdateAlias(paramsU)

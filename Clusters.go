@@ -25,13 +25,28 @@ func _listClusters(svc *ecs.ECS) *ecs.ListClustersOutput {
 		svc = ecs.New(session.New(), _getAwsConfig())
 	}
 
-	params := &ecs.ListClustersInput{
+	var marker = new(string)
+
+	var result = new(ecs.ListClustersOutput)
+
+	for marker != nil && len(result.ClusterArns) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
+
+		params := &ecs.ListClustersInput{
+			NextToken: marker,
+			MaxResults: &maxResult,
+		}
+
+		resp, err := svc.ListClusters(params)
+		assertError(err);
+		result.ClusterArns = append(result.ClusterArns, resp.ClusterArns...)
+
+		marker = result.NextToken
 	}
 
-	resp, err := svc.ListClusters(params)
-	assertError(err);
-
-	return resp
+	return result
 }
 
 func ListClusters() {

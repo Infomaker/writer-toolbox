@@ -215,3 +215,5 @@ Syntax:
     2.4      Added -login and -password flags for release notes generation
     2.4.1    Encoded html entities are un-escaped when generating release notes
     2.5      Added flag -releaseDate which can be used in release note generation as variable .releaseDate
+    2.6      Iterating over result set from AWS until all items are returned, in list functions
+             Added -maxResults to limit the number of items included in response

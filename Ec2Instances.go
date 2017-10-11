@@ -119,6 +119,9 @@ func _listLoadBalancers() *elb.DescribeLoadBalancersOutput {
 	var result = new(elb.DescribeLoadBalancersOutput)
 
 	for marker != nil && len(result.LoadBalancerDescriptions) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
 		params := &elb.DescribeLoadBalancersInput{
 			Marker:marker,
 		}

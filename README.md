@@ -217,3 +217,5 @@ Syntax:
     2.5      Added flag -releaseDate which can be used in release note generation as variable .releaseDate
     2.6      Iterating over result set from AWS until all items are returned, in list functions
              Added -maxResults to limit the number of items included in response
+    2.6.1    Bugfix: Invalid marker when listing load balancers
+    

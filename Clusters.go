@@ -4,7 +4,6 @@ import (
 	"regexp"
 
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
@@ -22,7 +21,7 @@ func ClusterName(a *string) string {
 
 func _listClusters(svc *ecs.ECS) *ecs.ListClustersOutput {
 	if svc == nil {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	var marker = new(string)

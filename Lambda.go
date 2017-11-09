@@ -1,20 +1,13 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
+
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"strconv"
 )
 
-func _getSession() *session.Session {
-	result, err := session.NewSession()
-
-	assertError(err)
-
-	return result
-}
 
 func _getLambdaFunctionAliasInfo(functionName, alias string) *lambda.AliasConfiguration {
 	svc := lambda.New(_getSession(), _getAwsConfig())

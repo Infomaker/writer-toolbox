@@ -5,7 +5,6 @@ import (
 
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"time"
 	"encoding/json"
@@ -52,7 +51,7 @@ func ExtractVersion(a string) (string, string) {
 
 func _listServices(cluster string, svc *ecs.ECS) *ecs.ListServicesOutput {
 	if svc == nil {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	var marker = new(string)
@@ -83,7 +82,7 @@ func _listServices(cluster string, svc *ecs.ECS) *ecs.ListServicesOutput {
 
 func _listTasks(cluster, service string, svc *ecs.ECS) (*ecs.ListTasksOutput, error) {
 	if svc == nil {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	var marker = new(string)
@@ -117,7 +116,7 @@ func _listTasks(cluster, service string, svc *ecs.ECS) (*ecs.ListTasksOutput, er
 
 func _describeService(clusterArn, serviceArn string, svc *ecs.ECS) *ecs.DescribeServicesOutput {
 	if svc == nil {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	params := &ecs.DescribeServicesInput{
@@ -132,7 +131,7 @@ func _describeService(clusterArn, serviceArn string, svc *ecs.ECS) *ecs.Describe
 
 func _describeTasks(clusterArn string, tasks []*string, svc *ecs.ECS) (*ecs.DescribeTasksOutput, error) {
 	if (svc == nil) {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	params := &ecs.DescribeTasksInput{
@@ -151,7 +150,7 @@ func _describeTasks(clusterArn string, tasks []*string, svc *ecs.ECS) (*ecs.Desc
 
 func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc *ecs.ECS) string {
 	if (svc == nil) {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	params := &ecs.RegisterTaskDefinitionInput{
@@ -170,7 +169,7 @@ func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc
 
 func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.DescribeServicesOutput, svc *ecs.ECS) {
 	if (svc == nil) {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	clusterArn := service.Services[0].ClusterArn
@@ -256,7 +255,7 @@ func GetSvcForCredentials(awsKey, secretKey, profile string) *ecs.ECS {
 
 	config := &aws.Config{Region: aws.String(region), Credentials: credentials.NewStaticCredentials(tempAuth.key, tempAuth.secret, "")}
 
-	return ecs.New(session.New(), config)
+	return ecs.New(_getSession(), config)
 }
 
 func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.ECS) (string, error) {
@@ -566,7 +565,7 @@ func ReleaseServices(version string, data []byte) {
 
 func _describeTaskDefinition(taskDefinitionName string, svc *ecs.ECS) *ecs.DescribeTaskDefinitionOutput {
 	if svc == nil {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	params := &ecs.DescribeTaskDefinitionInput{
@@ -581,7 +580,7 @@ func _describeTaskDefinition(taskDefinitionName string, svc *ecs.ECS) *ecs.Descr
 
 func _stopTask(cluster, taskArn string, svc *ecs.ECS) error {
 	if svc == nil {
-		svc = ecs.New(session.New(), _getAwsConfig())
+		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
 	params := &ecs.StopTaskInput{

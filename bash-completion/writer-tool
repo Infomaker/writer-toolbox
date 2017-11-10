@@ -73,8 +73,9 @@ _writertool() {
             ;;
         -command)
             local commands="help deployLambdaFunction listClusters listEc2Instances listLoadBalancers listLambdaFunctions \
-            listServices listTasks describeService releaseService releaseServices updateService updateServices scp ssh login getEntity getLambdaFunctionInfo \
-            getLambdaFunctionAliasInfo createReport createReleaseNotes listS3Buckets listFilesInS3Bucket copyFileFromS3Bucket version"
+            listServices listTasks describeContainerInstances describeService releaseService releaseServices updateService \
+            getLambdaFunctionAliasInfo createReport createReleaseNotes listS3Buckets listFilesInS3Bucket copyFileFromS3Bucket \
+            updateServices scp ssh login getEntity getLambdaFunctionInfo version"
             COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
             return 0
             ;;
@@ -97,7 +98,7 @@ _writertool() {
             _filedir
             ;;
         -publish)
-            COMPREPLY=( $(compgen -W "true false" -- ${curl}) )
+            COMPREPLY=( $(compgen -W "true false" -- ${cur}) )
             return -;
             ;;
         -target)

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"strconv"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"sort"
 )
 
 func ExtractName(a *string) string {
@@ -71,7 +72,7 @@ func _listServices(cluster string, svc *ecs.ECS) *ecs.ListServicesOutput {
 
 		resp, err := svc.ListServices(params)
 
-		assertError(err);
+		assertError(err)
 		result.ServiceArns = append(result.ServiceArns, resp.ServiceArns...)
 
 		marker = resp.NextToken
@@ -129,23 +130,44 @@ func _describeService(clusterArn, serviceArn string, svc *ecs.ECS) *ecs.Describe
 	return result
 }
 
-func _describeTasks(clusterArn string, tasks []*string, svc *ecs.ECS) (*ecs.DescribeTasksOutput, error) {
-	if (svc == nil) {
+func _describeContainerInstances(clusterArn string, svc *ecs.ECS) *ecs.DescribeContainerInstancesOutput {
+	if svc == nil {
 		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
-	params := &ecs.DescribeTasksInput{
-		Cluster: aws.String(clusterArn),
-		Tasks:   tasks,
+	var marker = new(string)
+
+	var containerInstanceResult = new(ecs.ListContainerInstancesOutput)
+
+	for marker != nil && len(containerInstanceResult.ContainerInstanceArns) < int(maxResult) {
+		if *marker == "" {
+			marker = nil
+		}
+
+		params := &ecs.ListContainerInstancesInput{
+			Cluster:    aws.String(clusterArn),
+			NextToken:  marker,
+			MaxResults: &maxResult,
+		}
+
+		resp, err := svc.ListContainerInstances(params)
+
+		assertError(err)
+		containerInstanceResult.ContainerInstanceArns = append(containerInstanceResult.ContainerInstanceArns, resp.ContainerInstanceArns...)
+
+		marker = resp.NextToken
 	}
 
-	result, err := svc.DescribeTasks(params)
-
-	if err != nil {
-		return nil, err
+	params := &ecs.DescribeContainerInstancesInput{
+		Cluster:            aws.String(clusterArn),
+		ContainerInstances: containerInstanceResult.ContainerInstanceArns,
 	}
 
-	return result, nil
+	result, err := svc.DescribeContainerInstances(params)
+	assertError(err)
+
+	return result
+
 }
 
 func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc *ecs.ECS) string {
@@ -233,6 +255,37 @@ func ListTasks(clusterArn, serviceArn string) {
 	for i := 0; i < len(resp.TaskArns); i++ {
 		name := ExtractName(resp.TaskArns[i])
 		fmt.Println(name)
+	}
+}
+
+type ByName []*ecs.Attribute
+
+func (a ByName) Len() int      { return len(a) }
+func (a ByName) Swap(i, j int) { a[i], a[j] = a[j], a[i]}
+func (a ByName) Less(i, j int) bool { return *a[i].Name < *a[j].Name }
+
+func DescribeContainerInstances(clusterArn string) {
+	resp := _describeContainerInstances(clusterArn, nil)
+
+	fmt.Printf("Number of container instances for cluster: %d\n", len(resp.ContainerInstances))
+
+	for i := 0; i < len(resp.ContainerInstances); i++ {
+		instance := resp.ContainerInstances[i]
+		fmt.Printf("\nEC2 Instance ID: %s\n", *instance.Ec2InstanceId)
+
+		sort.Sort(ByName(instance.Attributes))
+
+		for j := 0; j < len(instance.Attributes); j++ {
+			attribute := instance.Attributes[j]
+			if (attribute.Value != nil) {
+				if verboseLevel < 1 {
+					fmt.Printf("   %s\n", *attribute.Name)
+					fmt.Printf("      %s\n", *attribute.Value)
+				}
+			} else {
+				fmt.Printf("   %s\n", *attribute.Name)
+			}
+		}
 	}
 }
 

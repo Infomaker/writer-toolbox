@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"os"
 	"os/user"
@@ -15,6 +16,15 @@ const toolpath = ".writer-tool"
 func buildPath(pathElement ...string) string {
 	return strings.Join(pathElement[:], ""+string(os.PathSeparator))
 }
+
+func _getSession() *session.Session {
+	result, err := session.NewSession()
+
+	assertError(err)
+
+	return result
+}
+
 
 func createDirFromToolkitPath(elements ...string) string {
 	user, err := user.Current()

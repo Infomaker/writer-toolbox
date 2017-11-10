@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"strconv"
@@ -12,7 +11,7 @@ import (
 )
 
 func _listFilesInS3Bucket(bucketName, prefix string) *s3.ListObjectsOutput {
-	svc := s3.New(session.New(), _getAwsConfig())
+	svc := s3.New(_getSession(), _getAwsConfig())
 
 	var marker = new(string)
 	var result = new(s3.ListObjectsOutput)
@@ -44,7 +43,7 @@ func _listFilesInS3Bucket(bucketName, prefix string) *s3.ListObjectsOutput {
 }
 
 func _listS3Buckets() *s3.ListBucketsOutput {
-	svc := s3.New(session.New(), _getAwsConfig())
+	svc := s3.New(_getSession(), _getAwsConfig())
 
 	params := &s3.ListBucketsInput{
 
@@ -56,7 +55,7 @@ func _listS3Buckets() *s3.ListBucketsOutput {
 }
 
 func _copyFileFromS3Bucket(bucket, filename string) *s3.GetObjectOutput {
-	svc := s3.New(session.New(), _getAwsConfig())
+	svc := s3.New(_getSession(), _getAwsConfig())
 
 	params := &s3.GetObjectInput{
 		Key:    aws.String(filename),

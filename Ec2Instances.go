@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
 	"io/ioutil"
@@ -12,7 +11,7 @@ import (
 )
 
 func _listEc2Instances() *ec2.DescribeInstancesOutput {
-	svc := ec2.New(session.New(), _getAwsConfig())
+	svc := ec2.New(_getSession(), _getAwsConfig())
 
 	var marker = new(string)
 
@@ -112,7 +111,7 @@ func GetEntity(loadBalancerId, entityId string) {
 }
 
 func _listLoadBalancers() *elb.DescribeLoadBalancersOutput {
-	svc := elb.New(session.New(), _getAwsConfig())
+	svc := elb.New(_getSession(), _getAwsConfig())
 
 	var marker = new(string)
 

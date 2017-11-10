@@ -162,6 +162,9 @@ func executeCommand() {
 		clusterArn := _getClusterArn()
 		serviceArn := _getServiceArn()
 		DescribeService(clusterArn, serviceArn)
+	case "describeContainerInstances":
+		clusterArn := _getClusterArn()
+		DescribeContainerInstances(clusterArn)
 	case "updateService":
 		clusterArn := _getClusterArn()
 		serviceArn := _getServiceArn()

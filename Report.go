@@ -11,15 +11,21 @@ type Installations struct {
 }
 
 type installationItem struct {
-	Label    string `json:"label"`
+	Label    string        `json:"label"`
 	Services []ServiceItem `json:"services"`
-	Lambdas  []string `json:"lambdas"`
-	Other    []OtherItem `json:"other"`
+	Lambdas  []string      `json:"lambdas"`
+	Other    []OtherItem   `json:"other"`
+	Info     []InfoItem    `json:"info"`
 }
 
 type OtherItem struct {
 	Name string `json:"name"`
 	Url  string `json:"url"`
+}
+
+type InfoItem struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type CredentialsItem struct {
@@ -44,6 +50,7 @@ type OutputTemplate struct {
 	Services []OutputItem
 	Lambdas  []LambdaOutputItem
 	Others   []OtherOutputItem
+	Info     []InfoOutputItem
 }
 
 type OutputItem struct {
@@ -67,20 +74,23 @@ type OtherOutputItem struct {
 	Url   string
 }
 
+type InfoOutputItem struct {
+	Name  string
+	Value string
+}
+
 func GenerateReport(jsonData []byte, templateFile string) {
 	var config Installations
 
 	err := json.Unmarshal(jsonData, &config)
 
 	assertError(err);
-
 	output := Output{}
 
 	for i := 0; i < len(config.InstallationItems); i++ {
 		installation := config.InstallationItems[i];
-
 		outputTemplate := OutputTemplate{
-			Label : installation.Label,
+			Label: installation.Label,
 		}
 
 		for j := 0; j < len(installation.Services); j++ {
@@ -88,13 +98,11 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			service := installation.Services[j]
 			clusterArn := GetClusterArn(service.Cluster, nil);
 			serviceArn := GetServiceArn(clusterArn, service.Service, nil);
-
 			serviceDescription := _describeService(clusterArn, serviceArn, nil)
 
 			for k := 0; k < len(serviceDescription.Services); k++ {
 
 				realService := serviceDescription.Services[k];
-
 				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition, nil);
 				for l := 0; l < len(taskDefinition.TaskDefinition.ContainerDefinitions); l++ {
 					version, image := ExtractVersion(*taskDefinition.TaskDefinition.ContainerDefinitions[l].Image)
@@ -102,15 +110,14 @@ func GenerateReport(jsonData []byte, templateFile string) {
 					for n := 0; n < len(realService.Deployments); n++ {
 						deployment := realService.Deployments[n];
 						url := service.Url;
-
 						outputItem := OutputItem{
-							Version: version,
-							Image:ExtractImageName(image),
-							TaskDefName:ExtractName(deployment.TaskDefinition),
-							Label:service.Label,
-							RunningCount:*deployment.RunningCount,
-							DesiredCount:*deployment.DesiredCount,
-							Url:url,
+							Version:      version,
+							Image:        ExtractImageName(image),
+							TaskDefName:  ExtractName(deployment.TaskDefinition),
+							Label:        service.Label,
+							RunningCount: *deployment.RunningCount,
+							DesiredCount: *deployment.DesiredCount,
+							Url:          url,
 						}
 						outputTemplate.Services = append(outputTemplate.Services, outputItem)
 					}
@@ -124,11 +131,10 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			aliasInfo := _getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
 
 			functionInfo := _getLambdaFunctionInfo(lambdaFunction, *aliasInfo.FunctionVersion);
-
 			outputItem := LambdaOutputItem{
 				Description: *functionInfo.Description,
-				Version: *functionInfo.Version,
-				Label: lambdaFunction,
+				Version:     *functionInfo.Version,
+				Label:       lambdaFunction,
 			}
 
 			outputTemplate.Lambdas = append(outputTemplate.Lambdas, outputItem)
@@ -138,9 +144,18 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			item := installation.Other[k]
 			outputItem := OtherOutputItem{
 				Label: item.Name,
-				Url: item.Url,
+				Url:   item.Url,
 			}
 			outputTemplate.Others = append(outputTemplate.Others, outputItem)
+		}
+
+		for k := 0; k < len(installation.Info); k++ {
+			item := installation.Info[k]
+			infoItem := InfoOutputItem{
+				Name:  item.Name,
+				Value: item.Value,
+			}
+			outputTemplate.Info = append(outputTemplate.Info, infoItem)
 		}
 
 		output.Installations = append(output.Installations, outputTemplate)
@@ -149,9 +164,7 @@ func GenerateReport(jsonData []byte, templateFile string) {
 	reportTemplate, err := template.New("report").Parse(templateFile)
 
 	assertError(err);
-
 	err = reportTemplate.Execute(os.Stdout, output)
 
 	assertError(err);
 }
-

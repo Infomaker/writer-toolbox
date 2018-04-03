@@ -13,15 +13,16 @@ import (
 // Config structs
 
 type ConfigContainer struct {
-	IssuesUrl           string   `json:"issuesUrl"`
-	Jql                 string   `json:"jql"`
-	Fields              []string `json:"fields"`
-	HighlightField      string   `json:"highlightField"`
-	HeadsUpField        string   `json:"headsUpField"`
-	MaxResults          int64    `json:"maxResults"`
-	Username            string   `json:"username"`
-	Password            string   `json:"password"`
-	IssueTypesSortOrder []string `json:"issueTypesSortOrder"`
+	IssuesUrl               string   `json:"issuesUrl"`
+	Jql                     string   `json:"jql"`
+	Fields                  []string `json:"fields"`
+	HighlightField          string   `json:"highlightField"`
+	HeadsUpField            string   `json:"headsUpField"`
+	MaxResults              int64    `json:"maxResults"`
+	Username                string   `json:"username"`
+	Password                string   `json:"password"`
+	IssueTypesSortOrder     []string `json:"issueTypesSortOrder"`
+	ReleaseDescriptionLabel string   `json:"releaseDescriptionLabel"`
 }
 
 // Issues imports structs
@@ -51,6 +52,7 @@ type OutputData struct {
 	IssueTypes          map[string][]Issues
 	Dependencies        []Dependencies
 	IssueTypesSortOrder []string
+	ReleaseDescription  string
 }
 
 type Dependencies struct {
@@ -116,13 +118,26 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate,
 		} else {
 			output.IssueTypes[""] = []Issues{issue}
 		}
+
+		if fields["labels"] != nil {
+			if config.ReleaseDescriptionLabel != "" {
+				labels := fields["labels"].([]interface{})
+				for j := 0; j < len(labels); j++ {
+					if labels[j] == config.ReleaseDescriptionLabel {
+						if fields["description"] != nil {
+							output.ReleaseDescription = fields["description"].(string)
+						}
+					}
+				}
+			}
+
+		}
 	}
 
 	output.IssueTypesSortOrder = config.IssueTypesSortOrder
 
 	reportTemplate, err := template.New("report").Parse(templateFile)
 	assertError(err);
-
 	var out bytes.Buffer
 	err = reportTemplate.Execute(&out, output)
 
@@ -131,11 +146,9 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate,
 	assertError(err);
 }
 
-
 func getDefaultSortOrder() []string {
 	return []string{"New Feature", "Task", "Bug", "Epic"}
 }
-
 
 func getIssuesFromUrl(config ConfigContainer) []Issues {
 

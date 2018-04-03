@@ -139,6 +139,19 @@ Optionally, the IssueTypesSortOrder array may be specified. Default is
 }
 ```
 
+Optionally, a release overview issue may be specified. This is done by specifying
+the `releaseDescriptionLabel` property, defining the name of the label that specifies
+the issue that contains the release overview description. Example:
+
+```json
+{
+  "releaseDescriptionLabel": "release-overview"
+}
+```
+
+in order to get information from `releaseDescriptionLabel`, the `description` and `labels`
+fields must be added to the `fields` config.
+
 ##### Dependencies file
 
 The dependencies file specifies the dependencies and their versions for a service for it to function
@@ -220,3 +233,4 @@ Syntax:
     2.6.1    Bugfix: Invalid marker when listing load balancers
     2.7      Added describeContainerInstances command
     2.8      Added 'info' to report config
+    2.9      Added releaseDescriptionLabel to release notes generation    

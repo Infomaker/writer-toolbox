@@ -232,4 +232,5 @@ Syntax:
              Added -maxResults to limit the number of items included in response
     2.6.1    Bugfix: Invalid marker when listing load balancers
     2.7      Added describeContainerInstances command
-    2.8      Added 'info' to report config    
+    2.8      Added 'info' to report config
+    2.9      Added releaseDescriptionLabel to release notes generation    

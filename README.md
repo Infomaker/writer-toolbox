@@ -233,4 +233,5 @@ Syntax:
     2.6.1    Bugfix: Invalid marker when listing load balancers
     2.7      Added describeContainerInstances command
     2.8      Added 'info' to report config
-    2.9      Added releaseDescriptionLabel to release notes generation    
+    2.9      Added releaseDescriptionLabel to release notes generation
+    2.10     Added 'runtime' to lambda deploy command

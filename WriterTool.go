@@ -16,7 +16,7 @@ import (
 var appVersion string
 
 var cluster, command, containerName, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
-awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, functionName, alias,
+awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, runtime, functionName, alias,
 bucket, filename, publish, updatesFile, dependenciesFile, login, password string
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
@@ -39,6 +39,7 @@ func init() {
 	flag.StringVar(&command, "command", "", "The command to use. The command 'help' displays available commands.")
 	flag.StringVar(&cluster, "cluster", "", "Specify cluster to use")
 	flag.StringVar(&functionName, "functionName", "", "Lambda function name")
+	flag.StringVar(&runtime, "runtime", "", "Runtime for lambda function, see: https://docs.aws.amazon.com/cli/latest/reference/lambda/update-function-configuration.html. Example: 'nodejs8.10'")
 	flag.StringVar(&instanceId, "instanceId", "", "Specify the EC2 instance")
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
 	flag.StringVar(&service, "service", "", "Specify ECS service")

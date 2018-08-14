@@ -72,6 +72,7 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 
 	if runtime != "" {
 		params := &lambda.UpdateFunctionConfigurationInput{
+			FunctionName: aws.String(functionName),
 			Runtime: aws.String(runtime),
 		}
 
@@ -79,7 +80,7 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 
 		assertError(err)
 
-		fmt.Printf("Updated function %s with configuration %s", *result.FunctionName, *result.Runtime)
+		fmt.Printf("Updated function %s with configuration %s\n", *result.FunctionName, *result.Runtime)
 	}
 
 	params := &lambda.UpdateFunctionCodeInput{

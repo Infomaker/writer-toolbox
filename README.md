@@ -235,3 +235,4 @@ Syntax:
     2.8      Added 'info' to report config
     2.9      Added releaseDescriptionLabel to release notes generation
     2.10     Added 'runtime' to lambda deploy command
+    2.11     Bugfix: Added missing function name to call to runtime configration change for lambda function

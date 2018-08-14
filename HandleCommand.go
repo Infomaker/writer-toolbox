@@ -15,7 +15,7 @@ func printCommandHelp() {
 			"                         -output       : The target directory   (required)\n" +
 			"                         Example: -command copyFileFromS3Bucket -s3bucket images -s3filename cat.gif -output ~/Downloads",
 		"createReleaseNotes": "Create release notes document from Jira issues. Needs -reportConfig and -reportTemplate. Optional to use -dependenciesFile\n" +
-		"                             -reportConfig      : The configuration file used to fetch issues from Jira   (required)\n" +
+			"                             -reportConfig      : The configuration file used to fetch issues from Jira   (required)\n" +
 			"                         -reportTemplate    : Transforms jira issues into release notes file   (required)\n" +
 			"                         -dependenciesFile  : Specifies dependencies for service, used in template\n" +
 			"                         -version           : Specifies the version that is released. Can be used in template as .Version\n" +
@@ -66,6 +66,7 @@ func printCommandHelp() {
 		"listLambdaFunctions":        "List available lambda functions.",
 		"getLambdaFunctionInfo":      "Get lambda function information. Requires -functionName",
 		"getLambdaFunctionAliasInfo": "Get lambda function information. Requires -functionName, -alias",
+		"runtime":                    "Specifies the runtime to use for the lambda function. See https://docs.aws.amazon.com/cli/latest/reference/lambda/update-function-configuration.html for rumtimes. Uses current runtime for function if unset.",
 		"getEntity": "Gets an entity from the writer load balancer\n" +
 			"                         -loadBalancer : The load balancer fronting the writer instances    (required)\n" +
 			"                         {entityId}    : The ID of the entity to fetch    (required)\n" +
@@ -141,7 +142,7 @@ func executeCommand() {
 		if publish == "true" && version == "" {
 			errUsage("version must be specified when publishing")
 		}
-		DeployLambdaFunction(functionName, bucket, filename, alias, version, publish)
+		DeployLambdaFunction(functionName, bucket, filename, alias, version, runtime, publish)
 	case "listS3Buckets":
 		ListS3Buckets()
 	case "listFilesInS3Bucket":

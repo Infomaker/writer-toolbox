@@ -67,8 +67,20 @@ func _listLambdaFunctions() *lambda.ListFunctionsOutput {
 
 
 
-func _deployLambdaFunction(functionName, bucket, filename, alias, version string, publish bool) {
+func _deployLambdaFunction(functionName, bucket, filename, alias, version, runtime string, publish bool) {
 	svc := lambda.New(_getSession(), _getAwsConfig())
+
+	if runtime != "" {
+		params := &lambda.UpdateFunctionConfigurationInput{
+			Runtime: aws.String(runtime),
+		}
+
+		result, err := svc.UpdateFunctionConfiguration(params)
+
+		assertError(err)
+
+		fmt.Printf("Updated function %s with configuration %s", *result.FunctionName, *result.Runtime)
+	}
 
 	params := &lambda.UpdateFunctionCodeInput{
 		FunctionName: aws.String(functionName),
@@ -110,14 +122,14 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version string
 	}
 }
 
-func DeployLambdaFunction(functionName, bucket, filename, alias, version, publish string) {
+func DeployLambdaFunction(functionName, bucket, filename, alias, version, runtime, publish string) {
 	doPublish, err := strconv.ParseBool(publish)
 
 	if (err != nil) {
 		doPublish = false;
 	}
 
-	_deployLambdaFunction(functionName, bucket, filename, alias, version, doPublish)
+	_deployLambdaFunction(functionName, bucket, filename, alias, version, runtime, doPublish)
 }
 
 func GetLambdaFunctionAliasInfo(functionName, alias string) {

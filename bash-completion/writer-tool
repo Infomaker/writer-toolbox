@@ -57,7 +57,7 @@ _writertool() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     line="${COMP_LINE}"
     opts="-alias -awsKey -awsSecretKey -cluster -command -containerName -credentials -dependenciesFile -functionName -instanceId -instanceName -loadBalancer -login \
-     -maxResult -output -p -password -pemfile -profile -publish -recursive -releaseDate -reportConfig -reportTemplate -s3bucket -s3filename -service -target \
+     -maxResult -output -p -password -pemfile -profile -publish -recursive -releaseDate -reportConfig -reportTemplate -runtime -s3bucket -s3filename -service -target \
      -updatesFile -version -v -vv"
 
     case "${prev}" in
@@ -99,19 +99,39 @@ _writertool() {
             ;;
         -publish)
             COMPREPLY=( $(compgen -W "true false" -- ${cur}) )
-            return -;
+            return 0;
             ;;
         -target)
             _filedir
+            return 0;
             ;;
         -pemfile)
             _filedir
+            return 0;
             ;;
         -reportConfig)
             _filedir
+            return 0;
             ;;
         -reportTemplate)
             _filedir
+            return 0;
+            ;;
+        -runtime)
+            local runtimes="nodejs \
+                            nodejs4.3 \
+                            nodejs6.10 \
+                            nodejs8.10 \
+                            java8 \
+                            python2.7 \
+                            python3.6 \
+                            dotnetcore1.0 \
+                            dotnetcore2.0 \
+                            dotnetcore2.1 \
+                            nodejs4.3-edge \
+                            go1.x"
+            COMPREPLY=( $(compgen -W "${runtimes}" -- ${cur}) )
+            return 0;
             ;;
         -p)
             local list=$(cat ${HOME}/.aws/credentials | grep \\[ | sed 's/\[//g' | sed 's/\]//g')
@@ -140,9 +160,11 @@ _writertool() {
             ;;
         -updatesFile)
             _filedir
+            return 0;
             ;;
         -dependenciesFile)
             _filedir
+            return 0;
             ;;
         *)
         ;;

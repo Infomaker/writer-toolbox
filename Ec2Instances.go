@@ -18,7 +18,7 @@ func _listEc2Instances() *ec2.DescribeInstancesOutput {
 	var result = new(ec2.DescribeInstancesOutput)
 
 	for marker != nil && len(result.Reservations) < int(maxResult) {
-		if *marker == "" {
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 
@@ -118,7 +118,7 @@ func _listLoadBalancers() *elb.DescribeLoadBalancersOutput {
 	var result = new(elb.DescribeLoadBalancersOutput)
 
 	for marker != nil && len(result.LoadBalancerDescriptions) < int(maxResult) {
-		if *marker == "" {
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 		params := &elb.DescribeLoadBalancersInput{

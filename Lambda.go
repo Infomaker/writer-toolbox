@@ -43,7 +43,7 @@ func _listLambdaFunctions() *lambda.ListFunctionsOutput {
 	var result = new(lambda.ListFunctionsOutput)
 
 	for marker != nil && len(result.Functions) < int(maxResult) {
-		if *marker == "" {
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 

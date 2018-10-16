@@ -236,3 +236,4 @@ Syntax:
     2.9      Added releaseDescriptionLabel to release notes generation
     2.10     Added 'runtime' to lambda deploy command
     2.11     Bugfix: Added missing function name to call to runtime configration change for lambda function
+    2.11.1   Bugfix: Fixed runtime panic when listing files on S3

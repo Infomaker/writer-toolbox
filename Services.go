@@ -60,7 +60,7 @@ func _listServices(cluster string, svc *ecs.ECS) *ecs.ListServicesOutput {
 	var result = new(ecs.ListServicesOutput)
 
 	for marker != nil && len(result.ServiceArns) < int(maxResult) {
-		if *marker == "" {
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 
@@ -91,7 +91,7 @@ func _listTasks(cluster, service string, svc *ecs.ECS) (*ecs.ListTasksOutput, er
 	var result = new(ecs.ListTasksOutput)
 
 	for marker != nil && len(result.TaskArns) < int(maxResult) {
-		if *marker == "" {
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 
@@ -140,7 +140,7 @@ func _describeContainerInstances(clusterArn string, svc *ecs.ECS) *ecs.DescribeC
 	var containerInstanceResult = new(ecs.ListContainerInstancesOutput)
 
 	for marker != nil && len(containerInstanceResult.ContainerInstanceArns) < int(maxResult) {
-		if *marker == "" {
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 

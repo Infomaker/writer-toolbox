@@ -29,7 +29,7 @@ func _listClusters(svc *ecs.ECS) *ecs.ListClustersOutput {
 	var result = new(ecs.ListClustersOutput)
 
 	for marker != nil && len(result.ClusterArns) < int(maxResult) {
-		if *marker == "" {
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 

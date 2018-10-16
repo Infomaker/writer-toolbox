@@ -16,8 +16,9 @@ func _listFilesInS3Bucket(bucketName, prefix string) *s3.ListObjectsOutput {
 	var marker = new(string)
 	var result = new(s3.ListObjectsOutput)
 
-	for result != nil && len(result.Contents) < int(maxResult) {
-		if *marker == "" {
+	for marker != nil && len(result.Contents) < int(maxResult) {
+
+		if marker != nil && *marker == "" {
 			marker = nil
 		}
 
@@ -35,6 +36,10 @@ func _listFilesInS3Bucket(bucketName, prefix string) *s3.ListObjectsOutput {
 		assertError(err);
 
 		result.Contents = append(resp.Contents)
+
+		if (verbose) {
+			fmt.Println("Fetched", len(result.Contents), "items.")
+		}
 
 		marker = resp.NextMarker
 	}

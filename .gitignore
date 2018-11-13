@@ -1,3 +1,5 @@
 /writer-tool
+/target
 *.iml
 .idea
+.history

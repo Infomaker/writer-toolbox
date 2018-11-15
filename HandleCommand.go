@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"flag"
+	"fmt"
 	"os"
 )
 
@@ -117,14 +117,14 @@ func executeCommand() {
 		}
 		CopyFileFromS3Bucket(bucket, filename, output)
 	case "createReleaseNotes":
-		bytes := _readConfigFromFile();
-		template := _readTemplateFromFile();
+		bytes := _readConfigFromFile()
+		template := _readTemplateFromFile()
 		version := _getVersion()
-		dependencies := _readDependenciesFromFile();
+		dependencies := _readDependenciesFromFile()
 		GenerateReleaseNotes(bytes, template, version, releaseDate, dependencies)
 	case "createReport":
-		bytes := _readConfigFromFile();
-		template := _readTemplateFromFile();
+		bytes := _readConfigFromFile()
+		template := _readTemplateFromFile()
 		GenerateReport(bytes, template)
 	case "deployLambdaFunction":
 		if bucket == "" {
@@ -179,11 +179,11 @@ func executeCommand() {
 		version := _getVersion()
 		ReleaseService(clusterArn, serviceArn, version)
 	case "releaseServices":
-		updatesFile := _getUpdatesFile();
+		updatesFile := _getUpdatesFile()
 		version := _getVersion()
 		ReleaseServices(version, updatesFile)
 	case "listEc2Instances":
-		ListEc2Instances()
+		ListEc2Instances(instanceName)
 	case "listLoadBalancers":
 		ListLoadBalancers()
 	case "listLambdaFunctions":
@@ -259,20 +259,20 @@ func executeCommand() {
 		}
 		GetEntity(loadBalancer, flag.Args()[0])
 	case "getLambdaFunctionInfo":
-		if (functionName == "") {
+		if functionName == "" {
 			errUsage("functionName needs to be specified")
 		}
 		GetLambdaFunctionInfo(functionName)
 	case "getLambdaFunctionAliasInfo":
-		if (functionName == "") {
+		if functionName == "" {
 			errUsage("functionName needs to be specified")
 		}
-		if (alias == "") {
+		if alias == "" {
 			errUsage("alias needs to be specified")
 		}
 		GetLambdaFunctionAliasInfo(functionName, alias)
 	case "version":
-		fmt.Println(appVersion);
+		fmt.Println(appVersion)
 	case "help":
 		printCommandHelp()
 	default:

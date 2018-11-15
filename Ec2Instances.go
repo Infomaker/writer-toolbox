@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/elb"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/elb"
 )
 
 func _listEc2Instances() *ec2.DescribeInstancesOutput {
@@ -23,12 +24,12 @@ func _listEc2Instances() *ec2.DescribeInstancesOutput {
 		}
 
 		params := &ec2.DescribeInstancesInput{
-			NextToken: marker,
+			NextToken:  marker,
 			MaxResults: &maxResult,
 		}
 
 		resp, err := svc.DescribeInstances(params)
-		assertError(err);
+		assertError(err)
 		result.Reservations = append(result.Reservations, resp.Reservations...)
 
 		marker = resp.NextToken
@@ -37,27 +38,30 @@ func _listEc2Instances() *ec2.DescribeInstancesOutput {
 	return result
 }
 
-func ListEc2Instances() {
+// ListEc2Instances lists EC2 instances filtered by "running" instances and,
+// if supplied, instance name.
+func ListEc2Instances(instanceNameFilter string) {
 	resp := _listEc2Instances()
 
 	for i := 0; i < len(resp.Reservations); i++ {
 		for j := 0; j < len(resp.Reservations[i].Instances); j++ {
 			instance := resp.Reservations[i].Instances[j]
 			if *instance.State.Name == "running" {
-				if verboseLevel == 2 {
-					// fmt.Printf("%s (%s): %s, %s \n", *instance.InstanceId, *instance.PublicIpAddress, _getName(instance.Tags), *instance.State.Name)
-
-					if (instance.PublicIpAddress != nil) {
-						fmt.Printf("%s %s %s: %s \n", tabs(18, *instance.PublicIpAddress), tabs(30, _getName(instance.Tags)), *instance.InstanceId, *instance.State.Name)
-					} else if (instance.PrivateIpAddress != nil) {
-						fmt.Printf("%s %s %s: %s \n", tabs(18, "(" + *instance.PrivateIpAddress+")"), tabs(30, _getName(instance.Tags)), *instance.InstanceId, *instance.State.Name)
+				instanceName := _getName(instance.Tags)
+				if instanceNameFilter == "" || instanceNameFilter == instanceName {
+					if verboseLevel == 2 {
+						if instance.PublicIpAddress != nil {
+							fmt.Printf("%s %s %s: %s \n", tabs(18, *instance.PublicIpAddress), tabs(30, instanceName), *instance.InstanceId, *instance.State.Name)
+						} else if instance.PrivateIpAddress != nil {
+							fmt.Printf("%s %s %s: %s \n", tabs(18, "("+*instance.PrivateIpAddress+")"), tabs(30, instanceName), *instance.InstanceId, *instance.State.Name)
+						} else {
+							fmt.Printf("%s, %s: %s \n", instanceName, *instance.InstanceId, *instance.State.Name)
+						}
+					} else if verboseLevel == 1 {
+						fmt.Println(instanceName)
 					} else {
-						fmt.Printf("%s, %s: %s \n", _getName(instance.Tags), *instance.InstanceId, *instance.State.Name)
+						fmt.Println(*instance.InstanceId)
 					}
-				} else if verboseLevel == 1 {
-					fmt.Println(_getName(instance.Tags))
-				} else {
-					fmt.Println(*instance.InstanceId)
 				}
 			}
 		}
@@ -69,7 +73,7 @@ func tabs(size int, output string) string {
 }
 
 func max(a, b int) int {
-	if (a < b) {
+	if a < b {
 		return b
 	}
 	return a
@@ -93,11 +97,11 @@ func GetEntity(loadBalancerId, entityId string) {
 		}
 		resp, err := http.Get(url)
 
-		assertError(err);
+		assertError(err)
 		if resp.StatusCode == 200 {
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
-			assertError(err);
+			assertError(err)
 			fmt.Println(string(body))
 		} else {
 			fmt.Println(resp.StatusCode)
@@ -122,12 +126,12 @@ func _listLoadBalancers() *elb.DescribeLoadBalancersOutput {
 			marker = nil
 		}
 		params := &elb.DescribeLoadBalancersInput{
-			Marker:marker,
+			Marker: marker,
 		}
 
 		resp, err := svc.DescribeLoadBalancers(params)
 
-		assertError(err);
+		assertError(err)
 
 		result.LoadBalancerDescriptions = append(result.LoadBalancerDescriptions, resp.LoadBalancerDescriptions...)
 

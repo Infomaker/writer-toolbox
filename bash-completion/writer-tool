@@ -85,7 +85,7 @@ _writertool() {
             return 0
             ;;
         -instanceId)
-            local names=$( $(_tool) -command listEc2Instances )
+            local names=$( $(_tool) $(_regex instanceName) -command listEc2Instances )
             COMPREPLY=( $(compgen -W "${names}" -- ${cur}) )
             return 0
             ;;

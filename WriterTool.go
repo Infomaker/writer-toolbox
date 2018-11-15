@@ -16,8 +16,9 @@ import (
 var appVersion string
 
 var cluster, command, containerName, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
-awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, runtime, functionName, alias,
-bucket, filename, publish, updatesFile, dependenciesFile, login, password string
+	awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, runtime, functionName, alias,
+	bucket, filename, publish, updatesFile, dependenciesFile, login, password string
+
 var recursive, verbose, moreVerbose bool
 var region = "eu-west-1"
 var auth *Auth
@@ -44,6 +45,7 @@ func init() {
 	flag.StringVar(&instanceName, "instanceName", "", "Specify the EC2 instance(s) name")
 	flag.StringVar(&service, "service", "", "Specify ECS service")
 	flag.StringVar(&sshPem, "pemfile", "", "Specify PEM file for SSH access")
+	flag.StringVar(&sshPem, "i", "", "Specify PEM file for SSH access")
 	flag.BoolVar(&recursive, "recursive", false, "Specify recursive operation")
 	flag.StringVar(&output, "output", "", "Specify output directory")
 	flag.StringVar(&login, "login", "", "Specify login for external service")
@@ -63,7 +65,6 @@ func init() {
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 }
-
 
 func sortKeys(m map[string]string) []string {
 	keys := make([]string, 0, len(m))
@@ -86,38 +87,38 @@ func errState(message string) {
 
 func _readConfigFromFile() []byte {
 	if reportJson == "" {
-		errUsage("You must specify a report config file with: -reportConfig");
+		errUsage("You must specify a report config file with: -reportConfig")
 	}
 
 	content, err := ioutil.ReadFile(reportJson)
 
-	assertError(err);
+	assertError(err)
 
-	return content;
+	return content
 }
 
 func _readTemplateFromFile() string {
 	if reportTemplate == "" {
-		errUsage("You must specify a report template file with: -reportTemplate");
+		errUsage("You must specify a report template file with: -reportTemplate")
 	}
 
 	content, err := ioutil.ReadFile(reportTemplate)
 
-	assertError(err);
+	assertError(err)
 
-	return string(content);
+	return string(content)
 }
 
 func _readDependenciesFromFile() string {
 	if dependenciesFile == "" {
-		return "";
+		return ""
 	}
 
 	content, err := ioutil.ReadFile(dependenciesFile)
 
-	assertError(err);
+	assertError(err)
 
-	return string(content);
+	return string(content)
 }
 
 func _getClusterArn() string {
@@ -162,7 +163,7 @@ func getAwsCredentials(filepath string) (awsAccessKeyId, awsSecretKey string) {
 	var awsSecretKeyRegexp = regexp.MustCompile("aws_secret_access_key\\s*=\\s*(.*)")
 
 	file, err := ioutil.ReadFile(filepath)
-	assertError(err);
+	assertError(err)
 
 	matches := awsAccessKeyIdRegexp.FindStringSubmatch(string(file))
 	if len(matches) > 1 {
@@ -187,16 +188,16 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 	var awsSecretKeyRegexp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key\\s*=\\s*(.*)")
 
 	currUser, err := user.Current()
-	assertError(err);
+	assertError(err)
 
 	var path string
-	if (os.Getenv("AWS_CONFIG_FILE") != "") {
-		path = os.Getenv("AWS_CONFIG_FILE");
+	if os.Getenv("AWS_CONFIG_FILE") != "" {
+		path = os.Getenv("AWS_CONFIG_FILE")
 	} else {
 		path = filepath.Join(currUser.HomeDir, ".aws", "credentials")
 	}
 	file, err := ioutil.ReadFile(path)
-	assertError(err);
+	assertError(err)
 
 	matches := awsAccessKeyIdRegexp.FindStringSubmatch(string(file))
 	if len(matches) > 1 {
@@ -220,16 +221,16 @@ func getPemfileFromProfile(profile string) string {
 	var pemregex = regexp.MustCompile("\\[\\s*" + profile + "\\s*\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key.*\n\\s*pemfile\\s*=\\s*(.*)")
 
 	currUser, err := user.Current()
-	assertError(err);
+	assertError(err)
 
 	var path string
-	if (os.Getenv("AWS_CONFIG_FILE") != "") {
-		path = os.Getenv("AWS_CONFIG_FILE");
+	if os.Getenv("AWS_CONFIG_FILE") != "" {
+		path = os.Getenv("AWS_CONFIG_FILE")
 	} else {
 		path = filepath.Join(currUser.HomeDir, ".aws", "credentials")
 	}
 	file, err := ioutil.ReadFile(path)
-	assertError(err);
+	assertError(err)
 
 	matches := pemregex.FindStringSubmatch(string(file))
 	if len(matches) < 2 {
@@ -246,9 +247,9 @@ func _getUpdatesFile() []byte {
 
 	file, err := ioutil.ReadFile(updatesFile)
 
-	assertError(err);
+	assertError(err)
 
-	return file;
+	return file
 }
 
 func UpdateCredentials() {

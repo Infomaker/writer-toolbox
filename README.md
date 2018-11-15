@@ -5,13 +5,19 @@ for commands and values.
 ## How to build
     1. Set $GOPATH variable to your go src directory
     2. Issue: ./build.sh
-    
+
 ## How to install
 ```bash
 $ brew tap Infomaker/repo
 $ brew install writer-toolbox
 $ brew install bash-completion
 ```
+
+## How to release
+    1. Follow principle of [gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) when creating a new release
+    2. Don´t forget to update this README.md with new release information (bottom of file)
+    3. Build release using jenkins "build-writer-toolbox-release"
+    4. Build and push release to homebrew following the instructions found here: https://github.com/Infomaker/homebrew-repo
 
 ### Prerequisites
 The AWS environment must have a user with enough privileges to perform the operations available in the writer-tool.
@@ -106,6 +112,12 @@ Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.92-b14 mixed mode):
 $ writer-tool -command ssh -pemfile customer-pem.pem -instanceName editorservice 'curl --write-out %{http_code} --output /dev/null http://www.sunet.se'
 301
 ```
+
+#### Login, using ssh, on instance specifying external pem file
+```bash
+$ writer-tool -p im -command login -instanceId i-06bb6455c11517e54 -pemfile customer-pem.pem
+```
+Alias for parameter `-pemfile` is `-i`.
 
 #### Generate release notes for a version
 ```bash

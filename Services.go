@@ -440,10 +440,12 @@ func DescribeService(clusterArn, serviceArn string) {
 
 	for n := 0; n < len(service.Services); n++ {
 		item := service.Services[n]
-
-		fmt.Printf("Service name [%s], Running: %d, Pending: %d, Desired: %d\n", *item.ServiceName, *item.RunningCount, *item.PendingCount, *item.DesiredCount)
+		if verboseLevel == 0 {
+			fmt.Printf("Service name [%s], Running: %d, Pending: %d, Desired: %d\n", *item.ServiceName, *item.RunningCount, *item.PendingCount, *item.DesiredCount)
+		}
 
 		if verboseLevel == 1 {
+			fmt.Printf("Service name [%s], Running: %d, Pending: %d, Desired: %d\n", *item.ServiceName, *item.RunningCount, *item.PendingCount, *item.DesiredCount)
 			for i := 0; i < len(item.Deployments); i++ {
 				deployment := item.Deployments[i]
 				fmt.Printf("   %s (%s), running: %d, Pending: %d: Desired: %d\n", ExtractName(deployment.TaskDefinition), *deployment.Status, *deployment.RunningCount, *deployment.PendingCount, *deployment.DesiredCount)
@@ -451,9 +453,12 @@ func DescribeService(clusterArn, serviceArn string) {
 		}
 
 		if verboseLevel == 2 {
-			fmt.Printf("Deployment configuration -> MaximumPercent: %d, MinimumHealthyPercent: %d\n", *item.DeploymentConfiguration.MaximumPercent, *item.DeploymentConfiguration.MinimumHealthyPercent)
+			// fmt.Printf("Deployment configuration -> MaximumPercent: %d, MinimumHealthyPercent: %d\n", *item.DeploymentConfiguration.MaximumPercent, *item.DeploymentConfiguration.MinimumHealthyPercent)
 			definition := _describeTaskDefinition(*item.TaskDefinition, nil)
-			fmt.Println(definition)
+
+			jsonBytes, err := json.MarshalIndent(definition, "", " ")
+			assertError(err)
+			fmt.Println(string(jsonBytes))
 		}
 	}
 }

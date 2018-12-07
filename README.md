@@ -250,3 +250,4 @@ Syntax:
     2.11     Bugfix: Added missing function name to call to runtime configration change for lambda function
     2.11.1   Bugfix: Fixed runtime panic when listing files on S3
     2.11.2   Added 'i' (pemfile alias) when executing 'login' command. Also, filtered listing of instanceId on instanceName enabled
+    2.11.3   Altered describeService command, verbosity level -vv output format to json

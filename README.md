@@ -251,3 +251,4 @@ Syntax:
     2.11.1   Bugfix: Fixed runtime panic when listing files on S3
     2.11.2   Added 'i' (pemfile alias) when executing 'login' command. Also, filtered listing of instanceId on instanceName enabled
     2.11.3   Altered describeService command, verbosity level -vv output format to json
+    2.11.4   Added support for different aws regions specified either in the profile or as a command line parameter. Defaults to 'eu-west-1'.

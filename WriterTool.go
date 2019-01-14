@@ -17,10 +17,10 @@ var appVersion string
 
 var cluster, command, containerName, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
 	awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, runtime, functionName, alias,
-	bucket, filename, publish, updatesFile, dependenciesFile, login, password string
+	bucket, filename, publish, updatesFile, dependenciesFile, login, region, password string
 
 var recursive, verbose, moreVerbose bool
-var region = "eu-west-1"
+
 var auth *Auth
 var verboseLevel = 0
 var maxResult int64
@@ -64,6 +64,7 @@ func init() {
 	flag.StringVar(&dependenciesFile, "dependenciesFile", "", "File containing service dependencies. JSON formatted")
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
+	flag.StringVar(&region, "region", "", "The region to use")
 }
 
 func sortKeys(m map[string]string) []string {
@@ -183,9 +184,13 @@ func getAwsCredentials(filepath string) (awsAccessKeyId, awsSecretKey string) {
 	return awsAccessKeyId, awsSecretKey
 }
 
-func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey string) {
+// getAwsCredentialsFromProfile parse aws access keys and region from profile.
+// Region is optional.
+func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey, awsRegion string) {
 	var awsAccessKeyIdRegexp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id\\s*=\\s*(.*)")
 	var awsSecretKeyRegexp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key\\s*=\\s*(.*)")
+	var awsRegionExp = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key.*\n\\s*region\\s*=\\s*(.*)")
+	var awsRegionExpLong = regexp.MustCompile("\\[" + profile + "\\]\\s*\n\\s*aws_access_key_id.*\n\\s*aws_secret_access_key.*\n\\s*pemfile.*\n\\s*region\\s*=\\s*(.*)")
 
 	currUser, err := user.Current()
 	assertError(err)
@@ -199,6 +204,7 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 	file, err := ioutil.ReadFile(path)
 	assertError(err)
 
+	// Access key
 	matches := awsAccessKeyIdRegexp.FindStringSubmatch(string(file))
 	if len(matches) > 1 {
 		awsAccessKeyId = strings.TrimSpace(matches[1])
@@ -206,15 +212,28 @@ func getAwsCredentialsFromProfile(profile string) (awsAccessKeyId, awsSecretKey 
 		errUsage("Could not find aws access key id")
 	}
 
+	// Secret access key
 	matches = awsSecretKeyRegexp.FindStringSubmatch(string(file))
-
 	if len(matches) > 1 {
 		awsSecretKey = strings.TrimSpace(matches[1])
 	} else {
 		errUsage("Could not find aws secret key")
 	}
 
-	return awsAccessKeyId, awsSecretKey
+	// Region (optional)
+	matches = awsRegionExpLong.FindStringSubmatch(string(file))
+	if len(matches) > 1 {
+		awsRegion = strings.TrimSpace(matches[1])
+	} else {
+		matches = awsRegionExp.FindStringSubmatch(string(file))
+		if len(matches) > 1 {
+			awsRegion = strings.TrimSpace(matches[1])
+		} else {
+			awsRegion = ""
+		}
+	}
+
+	return awsAccessKeyId, awsSecretKey, awsRegion
 }
 
 func getPemfileFromProfile(profile string) string {
@@ -252,8 +271,10 @@ func _getUpdatesFile() []byte {
 	return file
 }
 
+// UpdateCredentials updates credentials and region from either
+// profile or command line parameters. If region is not supplied
+// function will default it to 'eu-west-1'.
 func UpdateCredentials() {
-
 	if credentialsFile != "" {
 		key, secret := getAwsCredentials(credentialsFile)
 		auth = new(Auth)
@@ -262,10 +283,17 @@ func UpdateCredentials() {
 	}
 
 	if profile != "" {
-		key, secret := getAwsCredentialsFromProfile(profile)
+		key, secret, profileRegion := getAwsCredentialsFromProfile(profile)
 		auth = new(Auth)
 		auth.key = key
 		auth.secret = secret
+
+		if region == "" && profileRegion != "" {
+			region = profileRegion
+		} else if region == "" {
+			fmt.Println("No region specified. Default to eu-west-1")
+			region = "eu-west-1"
+		}
 	}
 
 	if awsKey != "" && awsSecretKey == "" {

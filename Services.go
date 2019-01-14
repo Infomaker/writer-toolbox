@@ -3,15 +3,16 @@ package main
 import (
 	"regexp"
 
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
-	"time"
 	"encoding/json"
 	"errors"
-	"strconv"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"fmt"
 	"sort"
+	"strconv"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
 func ExtractName(a *string) string {
@@ -126,7 +127,7 @@ func _describeService(clusterArn, serviceArn string, svc *ecs.ECS) *ecs.Describe
 	}
 
 	result, err := svc.DescribeServices(params)
-	assertError(err);
+	assertError(err)
 	return result
 }
 
@@ -171,7 +172,7 @@ func _describeContainerInstances(clusterArn string, svc *ecs.ECS) *ecs.DescribeC
 }
 
 func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc *ecs.ECS) string {
-	if (svc == nil) {
+	if svc == nil {
 		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
@@ -183,14 +184,14 @@ func _createTaskDefinition(taskDefinition *ecs.DescribeTaskDefinitionOutput, svc
 
 	registrationResult, err := svc.RegisterTaskDefinition(params)
 
-	assertError(err);
+	assertError(err)
 	taskDefinitionArn := registrationResult.TaskDefinition.TaskDefinitionArn
 
 	return *taskDefinitionArn
 }
 
 func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.DescribeServicesOutput, svc *ecs.ECS) {
-	if (svc == nil) {
+	if svc == nil {
 		svc = ecs.New(_getSession(), _getAwsConfig())
 	}
 
@@ -206,7 +207,7 @@ func _updateTaskDefinitionForService(newTaskDefinitionArn string, service *ecs.D
 
 	_, err := svc.UpdateService(params)
 
-	assertError(err);
+	assertError(err)
 	_waitForUpdatedTaskDefinition(*clusterArn, *serviceArn, svc)
 }
 
@@ -218,14 +219,14 @@ func _waitForUpdatedTaskDefinition(cluster string, service string, svc *ecs.ECS)
 
 	for i := 0; i < attempts; i++ {
 
-		currentService := _describeService(cluster, service, svc);
+		currentService := _describeService(cluster, service, svc)
 		for j := 0; j < len(currentService.Services); j++ {
 			item := currentService.Services[j]
 
 			for k := 0; k < len(item.Deployments); k++ {
 				deployment := item.Deployments[k]
 
-				if (*deployment.Status == "PRIMARY" && *deployment.RunningCount == *deployment.DesiredCount) {
+				if *deployment.Status == "PRIMARY" && *deployment.RunningCount == *deployment.DesiredCount {
 					return nil
 				}
 			}
@@ -249,7 +250,7 @@ func ListServices(clusterArn string) {
 
 func ListTasks(clusterArn, serviceArn string) {
 	resp, err := _listTasks(clusterArn, serviceArn, nil)
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 	for i := 0; i < len(resp.TaskArns); i++ {
@@ -260,8 +261,8 @@ func ListTasks(clusterArn, serviceArn string) {
 
 type ByName []*ecs.Attribute
 
-func (a ByName) Len() int      { return len(a) }
-func (a ByName) Swap(i, j int) { a[i], a[j] = a[j], a[i]}
+func (a ByName) Len() int           { return len(a) }
+func (a ByName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByName) Less(i, j int) bool { return *a[i].Name < *a[j].Name }
 
 func DescribeContainerInstances(clusterArn string) {
@@ -277,7 +278,7 @@ func DescribeContainerInstances(clusterArn string) {
 
 		for j := 0; j < len(instance.Attributes); j++ {
 			attribute := instance.Attributes[j]
-			if (attribute.Value != nil) {
+			if attribute.Value != nil {
 				if verboseLevel < 1 {
 					fmt.Printf("   %s\n", *attribute.Name)
 					fmt.Printf("      %s\n", *attribute.Value)
@@ -289,18 +290,27 @@ func DescribeContainerInstances(clusterArn string) {
 	}
 }
 
+// GetSvcForCredentials gets service by credentials and
+// region fetched from either profile or command line
+// parameters. If region is not supplied function will
+// default it to 'eu-west-1'.
 func GetSvcForCredentials(awsKey, secretKey, profile string) *ecs.ECS {
-
 	var tempAuth = new(Auth)
-
 	if profile != "" {
-		key, secret := getAwsCredentialsFromProfile(profile)
+		key, secret, profileRegion := getAwsCredentialsFromProfile(profile)
 		tempAuth = new(Auth)
 		tempAuth.key = key
 		tempAuth.secret = secret
+
+		if region == "" && profileRegion != "" {
+			region = profileRegion
+		} else if region == "" {
+			fmt.Println("No region specified. Default to eu-west-1")
+			region = "eu-west-1"
+		}
 	}
 
-	if (awsKey != "" && secretKey != "") {
+	if awsKey != "" && secretKey != "" {
 		tempAuth = new(Auth)
 		tempAuth.key = awsKey
 		tempAuth.secret = secretKey
@@ -314,8 +324,8 @@ func GetSvcForCredentials(awsKey, secretKey, profile string) *ecs.ECS {
 func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.ECS) (string, error) {
 
 	tasks, err := _listTasks(clusterArn, serviceArn, svc)
-	if (err != nil) {
-		if (done != nil) {
+	if err != nil {
+		if done != nil {
 			done <- Report{Message: err.Error(), Success: false}
 		}
 		return "", err
@@ -324,7 +334,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 
 	if len(service.Services) > 1 {
 		errMessage := "No support for multiple services"
-		if (done != nil) {
+		if done != nil {
 			done <- Report{Message: errMessage, Success: false}
 		}
 		return "", errors.New(errMessage)
@@ -334,7 +344,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 
 	if len(tasks.TaskArns) < int(desiredCount) {
 		errorMessage := "The number of actual tasks " + strconv.Itoa(len(tasks.TaskArns)) + " differs from desired tasks " + strconv.FormatInt(desiredCount, 10)
-		if (done != nil) {
+		if done != nil {
 			done <- Report{Message: errorMessage, Success: false}
 		}
 		return "", errors.New(errorMessage)
@@ -343,14 +353,14 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 	for i := 0; i < len(tasks.TaskArns); i++ {
 		err = _stopTask(clusterArn, *tasks.TaskArns[i], svc)
 		if err != nil {
-			if (done != nil) {
+			if done != nil {
 				done <- Report{Message: err.Error(), Success: false}
 			}
 			return "", err
 		}
 		err = _waitForUpdatedTaskDefinition(clusterArn, serviceArn, svc)
 		if err != nil {
-			if (done != nil) {
+			if done != nil {
 				done <- Report{Message: err.Error(), Success: false}
 			}
 			return "", err
@@ -368,7 +378,7 @@ func _updateService(clusterArn, serviceArn string, done chan Report, svc *ecs.EC
 func UpdateService(clusterArn, serviceArn string) {
 	message, err := _updateService(clusterArn, serviceArn, nil, nil)
 
-	assertError(err);
+	assertError(err)
 	fmt.Println(message)
 }
 
@@ -393,14 +403,14 @@ func UpdateServices(data []byte) {
 
 	err := json.Unmarshal(data, &updateConfig)
 
-	assertError(err);
+	assertError(err)
 	messages := make(chan Report, len(updateConfig))
 
 	fmt.Printf("Performing update on %d services.\n", len(updateConfig))
 
 	for i := 0; i < len(updateConfig); i++ {
 		config := updateConfig[i]
-		if (config.AwsKey == "" && config.Profile == "") {
+		if config.AwsKey == "" && config.Profile == "" {
 			messages <- Report{Message: config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success: false}
 		} else {
 			svc := GetSvcForCredentials(config.AwsKey, config.AwsSecret, config.Profile)
@@ -411,20 +421,20 @@ func UpdateServices(data []byte) {
 		}
 	}
 
-	result := len(updateConfig);
+	result := len(updateConfig)
 	success := true
 	for {
 		message, more := <-messages
 		if more {
-			result--;
+			result--
 			fmt.Printf("%s, %d to go\n", message.Message, result)
 			if !message.Success {
 				success = false
 			}
 		}
 
-		if (result < 1) {
-			break;
+		if result < 1 {
+			break
 		}
 	}
 
@@ -466,7 +476,7 @@ func DescribeService(clusterArn, serviceArn string) {
 func ReleaseService(clusterArn, serviceArn, version string) {
 	message, err := _releaseService(clusterArn, serviceArn, containerName, version, nil, nil)
 
-	if (err != nil) {
+	if err != nil {
 		errState(err.Error())
 	}
 
@@ -478,7 +488,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 
 	if len(service.Services) > 1 {
 		errorMessage := *service.Services[0].ServiceName + " No support for multiple services"
-		if (done != nil) {
+		if done != nil {
 			done <- Report{Message: errorMessage, Success: false}
 		}
 		return "", errors.New(errorMessage)
@@ -489,10 +499,10 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 
 	containerIndex := 0
 
-	if (len(taskDefinition.TaskDefinition.ContainerDefinitions) > 1) {
+	if len(taskDefinition.TaskDefinition.ContainerDefinitions) > 1 {
 		if containerName == "" {
-			errorMessage := "Please specify containerName for service with multiple container definitions";
-			if (done != nil) {
+			errorMessage := "Please specify containerName for service with multiple container definitions"
+			if done != nil {
 				done <- Report{Message: errorMessage, Success: false}
 			}
 			return "", errors.New(errorMessage)
@@ -500,9 +510,9 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 
 		containerIndex = getContainerIndexForName(taskDefinition.TaskDefinition.ContainerDefinitions, containerName)
 
-		if (containerIndex == -1) {
-			errorMessage := "No container named " + containerName + " found in task definition";
-			if (done != nil) {
+		if containerIndex == -1 {
+			errorMessage := "No container named " + containerName + " found in task definition"
+			if done != nil {
 				done <- Report{Message: errorMessage, Success: false}
 			}
 			return "", errors.New(errorMessage)
@@ -512,7 +522,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 	dockerImage := *taskDefinition.TaskDefinition.ContainerDefinitions[containerIndex].Image
 	currentVersion, imagePart := ExtractVersion(dockerImage)
 
-	if (verboseLevel > 0) {
+	if verboseLevel > 0 {
 		fmt.Printf("Service            [%s]\n", *service.Services[0].ServiceName)
 		fmt.Printf("Task definition    [%s]\n", taskDefinitionName)
 		fmt.Printf("Docker image       [%s]\n", imagePart)
@@ -521,7 +531,7 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 
 	if version == currentVersion {
 		errMessage := *service.Services[0].ServiceName + " Specified version is already deployed!"
-		if (done != nil) {
+		if done != nil {
 			done <- Report{Message: errMessage, Success: false}
 		}
 		return "", errors.New(errMessage)
@@ -531,14 +541,14 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 	desiredCount := *service.Services[0].DesiredCount
 	minimumHealthyCount := desiredCount * minimumHealthyPercentage / 100
 
-	if (verboseLevel > 0) {
+	if verboseLevel > 0 {
 		fmt.Printf("HealthyPercentage [%d], DesiredCount [%d] -> Number of running instances during deployment [%d] ... ", minimumHealthyPercentage, desiredCount, minimumHealthyCount)
 	}
 
 	if desiredCount-minimumHealthyCount == 0 {
 
 		errMessage := *service.Services[0].ServiceName + " Not possible to deploy because of too high healthy percentage"
-		if (done != nil) {
+		if done != nil {
 			done <- Report{Message: errMessage, Success: false}
 		}
 		return "", errors.New(errMessage)
@@ -562,12 +572,12 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 func getContainerIndexForName(definitions []*ecs.ContainerDefinition, name string) int {
 	for i := 0; i < len(definitions); i++ {
 		definition := definitions[i]
-		if (*definition.Name == name) {
-			return i;
+		if *definition.Name == name {
+			return i
 		}
 	}
 
-	return -1;
+	return -1
 }
 
 func ReleaseServices(version string, data []byte) {
@@ -575,7 +585,7 @@ func ReleaseServices(version string, data []byte) {
 
 	err := json.Unmarshal(data, &updateConfig)
 
-	assertError(err);
+	assertError(err)
 	messages := make(chan Report, len(updateConfig))
 
 	fmt.Printf("Performing release to %s on %d services\n", version, len(updateConfig))
@@ -583,14 +593,14 @@ func ReleaseServices(version string, data []byte) {
 	for i := 0; i < len(updateConfig); i++ {
 		config := updateConfig[i]
 
-		if (config.AwsKey == "" && config.Profile == "") {
+		if config.AwsKey == "" && config.Profile == "" {
 			messages <- Report{Message: config.Label + ": No AwsKey or Profile specified for cluster: " + config.Cluster + ", service: " + config.Service, Success: false}
 		} else {
 			svc := GetSvcForCredentials(config.AwsKey, config.AwsSecret, config.Profile)
 			clusterArn := GetClusterArn(config.Cluster, svc)
 			serviceArn := GetServiceArn(clusterArn, config.Service, svc)
 			localContainerName := containerName
-			if (config.ContainerName != "") {
+			if config.ContainerName != "" {
 				localContainerName = config.ContainerName
 			}
 			fmt.Println(config.Label + ": Releasing service " + config.Service + ", containerName: " + localContainerName)
@@ -598,20 +608,20 @@ func ReleaseServices(version string, data []byte) {
 		}
 	}
 
-	result := len(updateConfig);
+	result := len(updateConfig)
 	success := true
 	for {
 		message, more := <-messages
 		if more {
-			result--;
+			result--
 			fmt.Printf("%s, %d to go\n", message.Message, result)
 			if !message.Success {
 				success = false
 			}
 		}
 
-		if (result < 1) {
-			break;
+		if result < 1 {
+			break
 		}
 	}
 
@@ -632,7 +642,7 @@ func _describeTaskDefinition(taskDefinitionName string, svc *ecs.ECS) *ecs.Descr
 
 	result, err := svc.DescribeTaskDefinition(params)
 
-	assertError(err);
+	assertError(err)
 	return result
 }
 

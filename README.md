@@ -21,12 +21,15 @@ $ brew install bash-completion
 
 ### Prerequisites
 The AWS environment must have a user with enough privileges to perform the operations available in the writer-tool.
-Credentials for the user should be stored in a file, credentials.txt, in `~/.aws` directory
+Credentials for the user should be stored in a file, credentials.txt, in `~/.aws` directory. In addition, it is possible to specify
+a AWS region as part of the profile (must be located on line below `aws_secret_access_key` or `pemfile` (if used)). Region will
+be overriden if writer-tool is executed with parameter `-region`. If no region is specified, writer-tool defaults to `eu-west-1`.
 
 ```bash
 [default]
 aws_access_key_id = {AKIA...}
 aws_secret_access_key = {DV83453....}
+region = eu-north-1
 ```
 
 Optionally, credentials may be specified using the `awsKey` and `awsSecretKey` options.

@@ -1,10 +1,9 @@
 package main
 
 import (
-
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/lambda"
 	"strconv"
 )
 
@@ -17,9 +16,9 @@ func _getLambdaFunctionAliasInfo(functionName, alias string) *lambda.AliasConfig
 		Name:         aws.String(alias),
 	}
 
-	resp, err := svc.GetAlias(params);
-	assertError(err);
-	return resp;
+	resp, err := svc.GetAlias(params)
+	assertError(err)
+	return resp
 }
 
 func _getLambdaFunctionInfo(functionName, qualifier string) *lambda.FunctionConfiguration {
@@ -30,8 +29,9 @@ func _getLambdaFunctionInfo(functionName, qualifier string) *lambda.FunctionConf
 		Qualifier:    aws.String(qualifier),
 	}
 
-	resp, err := svc.GetFunctionConfiguration(params);
-	assertError(err);
+	resp, err := svc.GetFunctionConfiguration(params)
+	assertError(err)
+
 	return resp
 }
 
@@ -39,7 +39,6 @@ func _listLambdaFunctions() *lambda.ListFunctionsOutput {
 	svc := lambda.New(_getSession(), _getAwsConfig())
 
 	var marker = new(string)
-
 	var result = new(lambda.ListFunctionsOutput)
 
 	for marker != nil && len(result.Functions) < int(maxResult) {
@@ -53,11 +52,9 @@ func _listLambdaFunctions() *lambda.ListFunctionsOutput {
 		}
 
 		resp, err := svc.ListFunctions(params)
-
 		assertError(err)
 
 		result.Functions = append(result.Functions, resp.Functions...)
-
 		marker = resp.NextMarker
 	}
 
@@ -77,7 +74,6 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 		}
 
 		result, err := svc.UpdateFunctionConfiguration(params)
-
 		assertError(err)
 
 		fmt.Printf("Updated function %s with configuration %s\n", *result.FunctionName, *result.Runtime)
@@ -90,19 +86,17 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 	}
 
 	result, err := svc.UpdateFunctionCode(params)
-
 	fmt.Printf("Updated %s with shasum %s\n", *result.FunctionName, *result.CodeSha256)
 
-	assertError(err);
+	assertError(err)
 	if publish {
-
 		params := &lambda.PublishVersionInput{
 			FunctionName: aws.String(functionName),
 			CodeSha256:   aws.String(*result.CodeSha256),
 			Description:  aws.String(version),
 		}
 
-		published, errP := svc.PublishVersion(params);
+		published, errP := svc.PublishVersion(params)
 		if errP != nil {
 			errState(errP.Error())
 		}
@@ -115,7 +109,7 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 
 		_, errU := svc.UpdateAlias(paramsU)
 
-		if (errU != nil) {
+		if errU != nil {
 			errState(errU.Error())
 		}
 
@@ -126,8 +120,8 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 func DeployLambdaFunction(functionName, bucket, filename, alias, version, runtime, publish string) {
 	doPublish, err := strconv.ParseBool(publish)
 
-	if (err != nil) {
-		doPublish = false;
+	if err != nil {
+		doPublish = false
 	}
 
 	_deployLambdaFunction(functionName, bucket, filename, alias, version, runtime, doPublish)
@@ -135,10 +129,8 @@ func DeployLambdaFunction(functionName, bucket, filename, alias, version, runtim
 
 func GetLambdaFunctionAliasInfo(functionName, alias string) {
 	aliasInfo := _getLambdaFunctionAliasInfo(functionName, alias)
-
 	functionInfo := _getLambdaFunctionInfo(functionName, *aliasInfo.FunctionVersion)
-
-	fmt.Println(*functionInfo.Version, ": ", *functionInfo.Description);
+	fmt.Println(*functionInfo.Version, ": ", *functionInfo.Description)
 }
 
 func GetLambdaFunctionInfo(functionName string) {
@@ -146,7 +138,6 @@ func GetLambdaFunctionInfo(functionName string) {
 }
 
 func ListLambdaFunctions() {
-
 	result := _listLambdaFunctions()
 
 	for i := 0; i < len(result.Functions); i++ {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"regexp"
-
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
@@ -39,7 +38,7 @@ func _listClusters(svc *ecs.ECS) *ecs.ListClustersOutput {
 		}
 
 		resp, err := svc.ListClusters(params)
-		assertError(err);
+		assertError(err)
 		result.ClusterArns = append(result.ClusterArns, resp.ClusterArns...)
 
 		marker = result.NextToken
@@ -53,7 +52,7 @@ func ListClusters() {
 	for i := 0; i < len(resp.ClusterArns); i++ {
 		name := ClusterName(resp.ClusterArns[i])
 		fmt.Println(name)
-		if (verboseLevel > 0) {
+		if verboseLevel > 0 {
 			servicesResp := _listServices(*resp.ClusterArns[i], nil)
 			for j := 0; j < len(servicesResp.ServiceArns); j++ {
 				fmt.Println("  " + ClusterName(servicesResp.ServiceArns[j]))

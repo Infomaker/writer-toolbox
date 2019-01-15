@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 	"unicode/utf8"
-
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
 )

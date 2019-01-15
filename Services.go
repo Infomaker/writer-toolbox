@@ -2,14 +2,12 @@ package main
 
 import (
 	"regexp"
-
 	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -496,7 +494,6 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 
 	taskDefinitionName := *service.Services[0].TaskDefinition
 	taskDefinition := _describeTaskDefinition(taskDefinitionName, svc)
-
 	containerIndex := 0
 
 	if len(taskDefinition.TaskDefinition.ContainerDefinitions) > 1 {
@@ -509,7 +506,6 @@ func _releaseService(clusterArn, serviceArn, containerName, version string, done
 		}
 
 		containerIndex = getContainerIndexForName(taskDefinition.TaskDefinition.ContainerDefinitions, containerName)
-
 		if containerIndex == -1 {
 			errorMessage := "No container named " + containerName + " found in task definition"
 			if done != nil {

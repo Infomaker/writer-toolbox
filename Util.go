@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"os"
 	"os/user"
 	"strings"
@@ -65,10 +65,10 @@ func CreateDir(source, target string) string {
 
 func GetFileMode(path string) os.FileMode {
 	f, err := os.Open(path)
-	assertError(err);
+	assertError(err)
 	defer f.Close()
 	fi, err := f.Stat()
-	assertError(err);
+	assertError(err)
 	return fi.Mode()
 }
 

@@ -83,33 +83,33 @@ func GenerateReport(jsonData []byte, templateFile string) {
 	var config Installations
 
 	err := json.Unmarshal(jsonData, &config)
+	assertError(err)
 
-	assertError(err);
 	output := Output{}
 
 	for i := 0; i < len(config.InstallationItems); i++ {
-		installation := config.InstallationItems[i];
+		installation := config.InstallationItems[i]
 		outputTemplate := OutputTemplate{
 			Label: installation.Label,
 		}
 
 		for j := 0; j < len(installation.Services); j++ {
-
 			service := installation.Services[j]
-			clusterArn := GetClusterArn(service.Cluster, nil);
-			serviceArn := GetServiceArn(clusterArn, service.Service, nil);
+			clusterArn := GetClusterArn(service.Cluster, nil)
+			serviceArn := GetServiceArn(clusterArn, service.Service, nil)
 			serviceDescription := _describeService(clusterArn, serviceArn, nil)
 
 			for k := 0; k < len(serviceDescription.Services); k++ {
+				realService := serviceDescription.Services[k]
+				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition, nil)
 
-				realService := serviceDescription.Services[k];
-				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition, nil);
 				for l := 0; l < len(taskDefinition.TaskDefinition.ContainerDefinitions); l++ {
 					version, image := ExtractVersion(*taskDefinition.TaskDefinition.ContainerDefinitions[l].Image)
 
 					for n := 0; n < len(realService.Deployments); n++ {
-						deployment := realService.Deployments[n];
-						url := service.Url;
+						deployment := realService.Deployments[n]
+						url := service.Url
+
 						outputItem := OutputItem{
 							Version:      version,
 							Image:        ExtractImageName(image),
@@ -127,16 +127,14 @@ func GenerateReport(jsonData []byte, templateFile string) {
 
 		for k := 0; k < len(installation.Lambdas); k++ {
 			lambdaFunction := installation.Lambdas[k]
-
 			aliasInfo := _getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
+			functionInfo := _getLambdaFunctionInfo(lambdaFunction, *aliasInfo.FunctionVersion)
 
-			functionInfo := _getLambdaFunctionInfo(lambdaFunction, *aliasInfo.FunctionVersion);
 			outputItem := LambdaOutputItem{
 				Description: *functionInfo.Description,
 				Version:     *functionInfo.Version,
 				Label:       lambdaFunction,
 			}
-
 			outputTemplate.Lambdas = append(outputTemplate.Lambdas, outputItem)
 		}
 
@@ -163,8 +161,8 @@ func GenerateReport(jsonData []byte, templateFile string) {
 
 	reportTemplate, err := template.New("report").Parse(templateFile)
 
-	assertError(err);
+	assertError(err)
 	err = reportTemplate.Execute(os.Stdout, output)
 
-	assertError(err);
+	assertError(err)
 }

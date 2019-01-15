@@ -1,17 +1,16 @@
 package main
 
 import (
-	"encoding/json"
-	"html/template"
-	"net/http"
 	"bytes"
-	"io/ioutil"
+	"encoding/json"
 	"fmt"
 	"html"
+	"html/template"
+	"io/ioutil"
+	"net/http"
 )
 
 // Config structs
-
 type ConfigContainer struct {
 	IssuesUrl               string   `json:"issuesUrl"`
 	Jql                     string   `json:"jql"`
@@ -26,7 +25,6 @@ type ConfigContainer struct {
 }
 
 // Issues imports structs
-
 type IssuesJson struct {
 	StartAt   int64    `json:"startAt"`
 	MaxResult int64    `json:"maxResults"`
@@ -35,7 +33,6 @@ type IssuesJson struct {
 }
 
 // -- Issues structs
-
 type Issues struct {
 	Key    string
 	Self   string
@@ -61,13 +58,11 @@ type Dependencies struct {
 }
 
 func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate, dependenciesData string) {
-
 	var dependencies []Dependencies
 	var config ConfigContainer
 
 	configInfo, err2 := template.New("hello").Parse(string(configData))
 	assertError(err2)
-
 	processedConfig := new(bytes.Buffer)
 
 	type ConfigData struct {
@@ -80,12 +75,12 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate,
 	assertError(err3)
 
 	err := json.Unmarshal(processedConfig.Bytes(), &config)
-	assertError(err);
+	assertError(err)
 	issues := getIssuesFromUrl(config)
 
-	if (dependenciesData != "") {
+	if dependenciesData != "" {
 		err = json.Unmarshal([]byte(dependenciesData), &dependencies)
-		assertError(err);
+		assertError(err)
 	}
 
 	var output = OutputData{
@@ -95,7 +90,7 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate,
 		Dependencies: dependencies,
 	}
 
-	if (len(config.IssueTypesSortOrder) == 0) {
+	if len(config.IssueTypesSortOrder) == 0 {
 		config.IssueTypesSortOrder = getDefaultSortOrder()
 	}
 
@@ -103,13 +98,14 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate,
 		issue := issues[i]
 		fields := issue.Fields.(map[string]interface{})
 
-		if (fields["issuetype"] != nil) {
+		if fields["issuetype"] != nil {
 			issueType := fields["issuetype"].(map[string]interface{})
 
-			var typeKey = "";
-			if (issueType["name"] != nil) {
+			var typeKey = ""
+			if issueType["name"] != nil {
 				typeKey = string(issueType["name"].(string))
 			}
+
 			if output.IssueTypes[typeKey] == nil {
 				output.IssueTypes[typeKey] = []Issues{issue}
 			} else {
@@ -130,20 +126,17 @@ func GenerateReleaseNotes(configData []byte, templateFile, version, releaseDate,
 					}
 				}
 			}
-
 		}
 	}
 
 	output.IssueTypesSortOrder = config.IssueTypesSortOrder
-
 	reportTemplate, err := template.New("report").Parse(templateFile)
-	assertError(err);
+	assertError(err)
+
 	var out bytes.Buffer
 	err = reportTemplate.Execute(&out, output)
-
 	fmt.Println(html.UnescapeString(out.String()))
-
-	assertError(err);
+	assertError(err)
 }
 
 func getDefaultSortOrder() []string {
@@ -151,7 +144,6 @@ func getDefaultSortOrder() []string {
 }
 
 func getIssuesFromUrl(config ConfigContainer) []Issues {
-
 	type JsonData struct {
 		Jql        string   `json:"jql"`
 		Fields     []string `json:"fields"`
@@ -174,14 +166,13 @@ func getIssuesFromUrl(config ConfigContainer) []Issues {
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
-	assertError(err);
+	assertError(err)
 	defer resp.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	assertError(err)
 
 	var issues IssuesJson
-
 	err = json.Unmarshal(responseBody, &issues)
 
 	return issues.Issues

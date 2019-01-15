@@ -11,35 +11,36 @@ import (
 
 func SshLogin(instance *ec2.Instance, pemFile string) {
 	path, err := exec.LookPath("ssh")
-	if (err != nil) {
+
+	if err != nil {
 		errUsage("Could not find binary 'ssh' in path")
 	}
 
-	if (instance.PublicIpAddress == nil) {
+	if instance.PublicIpAddress == nil {
 		errUsage("No public IP number on instance: " + _getName(instance.Tags))
 	}
 
-	if (pemFile == "") {
+	if pemFile == "" {
 		pemFile = _getPemFile()
 	}
 
-	args := []string{ "ssh", "-i", pemFile, "ec2-user@" + *instance.PublicIpAddress}
-
+	args := []string{"ssh", "-i", pemFile, "ec2-user@" + *instance.PublicIpAddress}
 	env := os.Environ()
 	execErr := syscall.Exec(path, args, env)
-	if (execErr != nil) {
+
+	if execErr != nil {
 		errState(execErr.Error())
 	}
 }
 
 func Ssh(instance *ec2.Instance, pemFile string, commands []string) {
 	path, err := exec.LookPath("ssh")
+
 	if err != nil {
 		errUsage("Could not find binary 'ssh' in path")
 	}
 
 	var arguments []string
-
 	arguments = append(arguments, "-i", pemFile, "ec2-user@"+*instance.PublicIpAddress)
 	arguments = append(arguments, commands...)
 
@@ -48,8 +49,9 @@ func Ssh(instance *ec2.Instance, pemFile string, commands []string) {
 
 func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 	path, err := exec.LookPath("scp")
+
 	if err != nil {
-		errUsage("Couldn not find binary 'scp' in path")
+		errUsage("Could not find binary 'scp' in path")
 	}
 
 	if len(commands) != 1 {
@@ -57,27 +59,24 @@ func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 	}
 
 	var arguments []string
-
 	rflag := ""
+
 	if recursive {
 		rflag = "-r"
 	}
 
 	name := _getName(instance.Tags) + "-" + *instance.InstanceId
-
 	arguments = append(arguments, "-i", pemFile, rflag, "-p", "ec2-user@"+*instance.PublicIpAddress+":"+commands[0])
 
 	if output == "" {
 		arguments = append(arguments, CreateDirUsingServerPathWithDate(name))
 	} else {
 		mode := GetFileMode(output)
-
 		if !mode.IsDir() {
 			errUsage("Output '" + output + "' must be directory")
 		}
 
 		dir := CreateDir(output, name)
-
 		arguments = append(arguments, dir)
 	}
 
@@ -91,6 +90,7 @@ func doExec(path string, arguments []string, doOutput bool) {
 	cmd.Stdout = &out
 	cmd.Stderr = &stdErr
 	errRun := cmd.Run()
+
 	if errRun != nil {
 		fmt.Println(stdErr.String())
 		os.Exit(1)

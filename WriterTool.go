@@ -16,8 +16,8 @@ import (
 var appVersion string
 
 var cluster, command, containerName, instanceId, instanceName, service, sshPem, output, credentialsFile, profile,
-	awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, runtime, functionName, alias,
-	bucket, filename, publish, updatesFile, dependenciesFile, login, region, password string
+awsKey, awsSecretKey, version, loadBalancer, reportJson, releaseDate, reportTemplate, runtime, functionName, alias,
+bucket, filename, publish, updatesFile, dependenciesFile, login, region, password, roleArn string
 
 var recursive, verbose, moreVerbose bool
 
@@ -28,6 +28,8 @@ var maxResult int64
 type Auth struct {
 	key    string `toml:"aws_access_key_id"`
 	secret string `toml:"aws_secret_access_key"`
+	region string `toml:"region"`
+	roleArn string `toml:"role_arn"`
 }
 
 func init() {
@@ -65,6 +67,7 @@ func init() {
 	flag.BoolVar(&verbose, "v", false, "Making output more verbose, where applicable")
 	flag.BoolVar(&moreVerbose, "vv", false, "Making output more verbose, where applicable")
 	flag.StringVar(&region, "region", "", "The region to use")
+	flag.StringVar(&roleArn, "roleArn", "", "ARN of the role to assume when executing AWS command")
 }
 
 func sortKeys(m map[string]string) []string {
@@ -265,15 +268,16 @@ func _getUpdatesFile() []byte {
 	}
 
 	file, err := ioutil.ReadFile(updatesFile)
-
 	assertError(err)
 
 	return file
 }
 
-// UpdateCredentials updates credentials and region from either
-// profile or command line parameters. If region is not supplied
-// function will default it to 'eu-west-1'.
+/*
+UpdateCredentials updates credentials and region from either profile or command
+line parameters. If region is not supplied function will default it to
+'eu-west-1'.
+*/
 func UpdateCredentials() {
 	if credentialsFile != "" {
 		key, secret := getAwsCredentials(credentialsFile)
@@ -319,6 +323,7 @@ func main() {
 	if verbose {
 		verboseLevel = 1
 	}
+
 	if moreVerbose {
 		verboseLevel = 2
 	}
@@ -328,7 +333,7 @@ func main() {
 		return
 	}
 
-	UpdateCredentials()
+	//UpdateCredentials()
 
 	executeCommand()
 }

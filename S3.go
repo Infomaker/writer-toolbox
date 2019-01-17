@@ -48,6 +48,18 @@ func _listFilesInS3Bucket(bucketName, prefix string) *s3.ListObjectsOutput {
 }
 
 func _listS3Buckets() *s3.ListBucketsOutput {
+	sess, cfg := getSessionAndConfig()
+
+	svc := s3.New(sess, cfg)
+	params := &s3.ListBucketsInput{}
+
+	resp, err := svc.ListBuckets(params)
+	assertError(err)
+
+	return resp
+}
+
+func _listS3BucketsOLD() *s3.ListBucketsOutput {
 	svc := s3.New(_getSession(), _getAwsConfig())
 
 	params := &s3.ListBucketsInput{

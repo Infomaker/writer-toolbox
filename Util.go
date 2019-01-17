@@ -65,7 +65,10 @@ func getSessionAndConfig() (*session.Session, *aws.Config) {
 		}
 
 		sess = session.Must(session.NewSession())
-		cfg = &aws.Config{Credentials: stscreds.NewCredentials(sess, roleArn)}
+		cfg = &aws.Config{
+			Credentials: stscreds.NewCredentials(sess, roleArn),
+			Region: aws.String(region),
+		}
 	} else {
 		// Invalid use of writer-tool
 		errUsage("Invalid use of writer-tool. Parameter \"profile\" OR \"roleArn\" must be supplied")

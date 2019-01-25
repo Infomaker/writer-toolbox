@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	//"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"os"
 	"os/user"
@@ -29,51 +29,24 @@ func getSessionAndConfig() (*session.Session, *aws.Config) {
 	var sess *session.Session
 	var cfg *aws.Config
 
+	if verbose {
+		fmt.Printf(
+			"Get session and config using profile \"%s\" and region \"%s\"\n",
+			profile, region,
+		)
+	}
+
 	if profile != "" {
-		// A profile and a credential (and possibly a config file) is expected
-		// in order to create a valid session
-		if verbose {
-			fmt.Printf(
-				"Get session and config using profile \"%s\" and region \"%s\"\n",
-				profile, region,
-			)
-		}
-
-		// Note that in this case, no config is necessary
-		if region != "" {
-			// Use region supplied as parameter
-			sess = session.Must(session.NewSessionWithOptions(session.Options{
-				Config:            aws.Config{Region: aws.String(region)},
-				SharedConfigState: session.SharedConfigEnable,
-				Profile:           profile,
-			}))
-		} else {
-			// Use region specified in .aws/config file
-			sess = session.Must(session.NewSessionWithOptions(session.Options{
-				SharedConfigState: session.SharedConfigEnable,
-				Profile:           profile,
-			}))
-		}
-	} else if roleArn != "" {
-		// Defaults to resolve permission and account by configuration of
-		// instance on which writer-tool runs in combination with role_arn.
-		if verbose {
-			fmt.Printf(
-				"Get session and config using roleArn \"%s\"\n",
-				roleArn,
-			)
-		}
-
-		sess = session.Must(session.NewSession())
-		cfg = &aws.Config{
-			Credentials:                   stscreds.NewCredentials(sess, roleArn),
-			LogLevel:                      aws.LogLevel(aws.LogDebugWithHTTPBody),
-			CredentialsChainVerboseErrors: aws.Bool(true),
-			Region:                        aws.String(region),
-		}
+		sess = session.Must(session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+			Profile:           profile,
+		}))
 	} else {
-		// Invalid use of writer-tool
-		errUsage("Invalid use of writer-tool. Parameter \"profile\" OR \"roleArn\" must be supplied")
+		sess = session.Must(session.NewSession())
+	}
+
+	if region != "" {
+		cfg = &aws.Config{Region: aws.String(region)}
 	}
 
 	return sess, cfg

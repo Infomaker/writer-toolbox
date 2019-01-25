@@ -66,8 +66,10 @@ func getSessionAndConfig() (*session.Session, *aws.Config) {
 
 		sess = session.Must(session.NewSession())
 		cfg = &aws.Config{
-			Credentials: stscreds.NewCredentials(sess, roleArn),
-			Region: aws.String(region),
+			Credentials:                   stscreds.NewCredentials(sess, roleArn),
+			LogLevel:                      aws.LogLevel(aws.LogDebugWithHTTPBody),
+			CredentialsChainVerboseErrors: aws.Bool(true),
+			Region:                        aws.String(region),
 		}
 	} else {
 		// Invalid use of writer-tool

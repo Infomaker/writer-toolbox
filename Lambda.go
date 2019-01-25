@@ -86,9 +86,10 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 	}
 
 	result, err := svc.UpdateFunctionCode(params)
+	assertError(err)
+
 	fmt.Printf("Updated %s with shasum %s\n", *result.FunctionName, *result.CodeSha256)
 
-	assertError(err)
 	if publish {
 		params := &lambda.PublishVersionInput{
 			FunctionName: aws.String(functionName),

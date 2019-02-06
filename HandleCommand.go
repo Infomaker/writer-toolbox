@@ -42,7 +42,6 @@ func printCommandHelp() {
 			"                           -updatesFile : Path to a file containing services to update. Format of file is: \n" +
 			"                             [\n" +
 			"                               {\n" +
-			"                                  \"awsKey\": \"(aws key)\"\n" +
 			"                                  \"awsSecret\": \"(aws secret key)\"\n" +
 			"                                  \"cluster\": \"(cluster as reported using -listClusters)\"\n" +
 			"                                  \"service\": \"(service as reported using -listServices)\"\n" +
@@ -54,7 +53,6 @@ func printCommandHelp() {
 			"                           -updatesFile : Path to a file containing services to update. Format of file is: \n" +
 			"                             [\n" +
 			"                               {\n" +
-			"                                  \"awsKey\": \"(aws key)\"\n" +
 			"                                  \"awsSecret\": \"(aws secret key)\"\n" +
 			"                                  \"cluster\": \"(cluster as reported using -listClusters)\"\n" +
 			"                                  \"service\": \"(service as reported using -listServices)\"\n" +
@@ -103,84 +101,102 @@ func printCommandHelp() {
 
 }
 
+func validateListFilesInS3Bucket() {
+	if bucket == "" {
+		errUsage("s3bucket must be specified")
+	}
+}
+
+func validateCopyFileFromS3Bucket() {
+	if bucket == "" {
+		errUsage("s3bucket must be specified")
+	}
+
+	if filename == "" {
+		errUsage("s3filename must be specified")
+	}
+
+	if output == "" {
+		errUsage("output must be specified")
+	}
+}
+
+func validateDeployLambdaFunction() {
+	if bucket == "" {
+		errUsage("s3bucket must be speficied")
+	}
+
+	if filename == "" {
+		errUsage("s3filename must be specified")
+	}
+
+	if functionName == "" {
+		errUsage("functionName must be specified")
+	}
+
+	if publish == "true" && alias == "" {
+		errUsage("alias must be specified when publishing")
+	}
+
+	if publish == "true" && version == "" {
+		errUsage("version must be specified when publishing")
+	}
+}
+
 func executeCommand() {
 	switch command {
 	case "copyFileFromS3Bucket":
-		if bucket == "" {
-			errUsage("s3bucket must be specified")
-		}
-		if filename == "" {
-			errUsage("s3filename must be specified")
-		}
-		if output == "" {
-			errUsage("output must be speficied")
-		}
+		validateCopyFileFromS3Bucket()
 		CopyFileFromS3Bucket(bucket, filename, output)
 	case "createReleaseNotes":
-		bytes := _readConfigFromFile()
-		template := _readTemplateFromFile()
-		version := _getVersion()
-		dependencies := _readDependenciesFromFile()
+		bytes := readConfigFromFile()
+		template := readTemplateFromFile()
+		version := getVersion()
+		dependencies := readDependenciesFromFile()
 		GenerateReleaseNotes(bytes, template, version, releaseDate, dependencies)
 	case "createReport":
-		bytes := _readConfigFromFile()
-		template := _readTemplateFromFile()
+		bytes := readConfigFromFile()
+		template := readTemplateFromFile()
 		GenerateReport(bytes, template)
 	case "deployLambdaFunction":
-		if bucket == "" {
-			errUsage("s3bucket must be speficied")
-		}
-		if filename == "" {
-			errUsage("s3filename must be specified")
-		}
-		if functionName == "" {
-			errUsage("functionName must be specified")
-		}
-		if publish == "true" && alias == "" {
-			errUsage("alias must be specified when publishing")
-		}
-		if publish == "true" && version == "" {
-			errUsage("version must be specified when publishing")
-		}
+		validateDeployLambdaFunction()
 		DeployLambdaFunction(functionName, bucket, filename, alias, version, runtime, publish)
 	case "listS3Buckets":
 		ListS3Buckets()
 	case "listFilesInS3Bucket":
-		if bucket == "" {
-			errUsage("s3bucket must be specified")
-		}
+		validateListFilesInS3Bucket()
 		ListFilesInS3Bucket(bucket, filename)
 	case "listClusters":
 		ListClusters()
 	case "listServices":
-		clusterArn := _getClusterArn()
+		clusterArn := getClusterArn()
 		ListServices(clusterArn)
 	case "listTasks":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
 		ListTasks(clusterArn, serviceArn)
 	case "describeService":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
 		DescribeService(clusterArn, serviceArn)
 	case "describeContainerInstances":
-		clusterArn := _getClusterArn()
+		clusterArn := getClusterArn()
 		DescribeContainerInstances(clusterArn)
 	case "updateService":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
 		UpdateService(clusterArn, serviceArn)
 	case "updateServices":
-		updatesFile := _getUpdatesFile()
+		updatesFile := getUpdatesFile()
 		UpdateServices(updatesFile)
 	case "releaseService":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
-		version := _getVersion()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
+		version := getVersion()
 		ReleaseService(clusterArn, serviceArn, version)
 	case "releaseServices":
-		updatesFile := _getUpdatesFile()
-		version := _getVersion()
+		updatesFile := getUpdatesFile()
+		version := getVersion()
 		ReleaseServices(version, updatesFile)
 	case "listEc2Instances":
 		ListEc2Instances(instanceName)
@@ -278,5 +294,4 @@ func executeCommand() {
 	default:
 		errUsage("Unknown command: " + command)
 	}
-
 }

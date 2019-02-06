@@ -24,7 +24,7 @@ _regex()
 
 _tool()
 {
-echo "writer-tool $(_regex credentials expand) $(_regex awsKey) $(_regex awsSecretKey) $(_regex p) $(_regex profile)"
+echo "writer-tool $(_regex credentials expand) $(_regex p) $(_regex profile)"
 
 }
 
@@ -56,7 +56,7 @@ _writertool() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     line="${COMP_LINE}"
-    opts="-alias -awsKey -awsSecretKey -cluster -command -containerName -credentials -dependenciesFile -functionName -instanceId -instanceName -loadBalancer -login \
+    opts="-alias -cluster -command -containerName -credentials -dependenciesFile -functionName -instanceId -instanceName -loadBalancer -login \
      -maxResult -output -p -password -pemfile -profile -publish -recursive -releaseDate -reportConfig -reportTemplate -runtime -s3bucket -s3filename -service -target \
      -updatesFile -version -v -vv"
 

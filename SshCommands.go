@@ -17,11 +17,11 @@ func SshLogin(instance *ec2.Instance, pemFile string) {
 	}
 
 	if instance.PublicIpAddress == nil {
-		errUsage("No public IP number on instance: " + _getName(instance.Tags))
+		errUsage("No public IP number on instance: " + getName(instance.Tags))
 	}
 
 	if pemFile == "" {
-		pemFile = _getPemFile()
+		pemFile = getPemFile()
 	}
 
 	args := []string{"ssh", "-i", pemFile, "ec2-user@" + *instance.PublicIpAddress}
@@ -65,7 +65,7 @@ func Scp(instance *ec2.Instance, pemFile string, commands []string) {
 		rflag = "-r"
 	}
 
-	name := _getName(instance.Tags) + "-" + *instance.InstanceId
+	name := getName(instance.Tags) + "-" + *instance.InstanceId
 	arguments = append(arguments, "-i", pemFile, rflag, "-p", "ec2-user@"+*instance.PublicIpAddress+":"+commands[0])
 
 	if output == "" {

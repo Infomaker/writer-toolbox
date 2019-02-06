@@ -28,12 +28,6 @@ type InfoItem struct {
 	Value string `json:"value"`
 }
 
-type CredentialsItem struct {
-	Profile   string `json:"profile"`
-	AwsKey    string `json:"awsKey"`
-	AwsSecret string `json:"awsSecret"`
-}
-
 type ServiceItem struct {
 	Label   string `json:"label"`
 	Cluster string `json:"cluster"`
@@ -97,11 +91,11 @@ func GenerateReport(jsonData []byte, templateFile string) {
 			service := installation.Services[j]
 			clusterArn := GetClusterArn(service.Cluster, nil)
 			serviceArn := GetServiceArn(clusterArn, service.Service, nil)
-			serviceDescription := _describeService(clusterArn, serviceArn, nil)
+			serviceDescription := describeService(clusterArn, serviceArn, nil)
 
 			for k := 0; k < len(serviceDescription.Services); k++ {
 				realService := serviceDescription.Services[k]
-				taskDefinition := _describeTaskDefinition(*realService.TaskDefinition, nil)
+				taskDefinition := describeTaskDefinition(*realService.TaskDefinition, nil)
 
 				for l := 0; l < len(taskDefinition.TaskDefinition.ContainerDefinitions); l++ {
 					version, image := ExtractVersion(*taskDefinition.TaskDefinition.ContainerDefinitions[l].Image)
@@ -127,8 +121,8 @@ func GenerateReport(jsonData []byte, templateFile string) {
 
 		for k := 0; k < len(installation.Lambdas); k++ {
 			lambdaFunction := installation.Lambdas[k]
-			aliasInfo := _getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
-			functionInfo := _getLambdaFunctionInfo(lambdaFunction, *aliasInfo.FunctionVersion)
+			aliasInfo := getLambdaFunctionAliasInfo(lambdaFunction, "PRIMARY")
+			functionInfo := getLambdaFunctionInfo(lambdaFunction, *aliasInfo.FunctionVersion)
 
 			outputItem := LambdaOutputItem{
 				Description: *functionInfo.Description,

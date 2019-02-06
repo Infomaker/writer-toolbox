@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	//"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"os"
 	"os/user"
@@ -18,11 +16,31 @@ func buildPath(pathElement ...string) string {
 	return strings.Join(pathElement[:], ""+string(os.PathSeparator))
 }
 
-func _getSession() *session.Session {
-	result, err := session.NewSession()
-	assertError(err)
+func getSessionAndConfigForParams(paramProfile string, paramRegion string) (*session.Session, *aws.Config) {
+	var sess *session.Session
+	var cfg *aws.Config
 
-	return result
+	if verbose {
+		fmt.Printf(
+			"Get session and config using profile \"%s\" and region \"%s\"\n",
+			paramProfile, paramRegion,
+		)
+	}
+
+	if paramProfile == "" {
+		errUsage("Invalid request. Missing explicit parameter for profile")
+	}
+
+	sess = session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+		Profile:           paramProfile,
+	}))
+
+	if paramRegion != "" {
+		cfg = &aws.Config{Region: aws.String(paramRegion)}
+	}
+
+	return sess, cfg
 }
 
 func getSessionAndConfig() (*session.Session, *aws.Config) {
@@ -53,14 +71,14 @@ func getSessionAndConfig() (*session.Session, *aws.Config) {
 }
 
 func createDirFromToolkitPath(elements ...string) string {
-	user, err := user.Current()
+	currUser, err := user.Current()
 
 	if err != nil {
 		errUsage("Error looking up current user")
 	}
 
 	var targetPath []string
-	targetPath = append(targetPath, user.HomeDir, toolpath)
+	targetPath = append(targetPath, currUser.HomeDir, toolpath)
 	targetPath = append(targetPath, elements...)
 
 	path := buildPath(targetPath...)
@@ -93,31 +111,17 @@ func CreateDir(source, target string) string {
 func GetFileMode(path string) os.FileMode {
 	f, err := os.Open(path)
 	assertError(err)
+
+	//noinspection GoUnhandledErrorResult
 	defer f.Close()
+
 	fi, err := f.Stat()
 	assertError(err)
 
 	return fi.Mode()
 }
 
-func getAwsConfig() *aws.Config {
-	fmt.Println("We are about to test new config solution!")
-	//return &aws.Config{Region: aws.String(region)}
-	return &aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.NewSharedCredentials("", "writer-imit"),
-	}
-}
-
-func _getAwsConfig() *aws.Config {
-	if auth != nil {
-		return &aws.Config{Region: aws.String(region), Credentials: credentials.NewStaticCredentials(auth.key, auth.secret, "")}
-	}
-
-	return &aws.Config{Region: aws.String(region)}
-}
-
-func _getPemFile() string {
+func getPemFile() string {
 	if profile != "" {
 		return getPemfileFromProfile(profile)
 	}

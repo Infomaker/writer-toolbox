@@ -14,16 +14,19 @@ $ brew install bash-completion
 ```
 
 ## How to release
-    1. Follow principle of [gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) when creating a new release
-    2. Don´t forget to update this README.md with new release information (bottom of file)
-    3. Build release using jenkins "build-writer-toolbox-release"
-    4. Build and push release to homebrew following the instructions found here: https://github.com/Infomaker/homebrew-repo
+1. Follow principle of [gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) when creating a new release
+2. Don´t forget to update this README.md with new release information (bottom of file)
+3. Build release using jenkins "build-writer-toolbox-release"
+4. Build and push release to homebrew following the instructions found here: https://github.com/Infomaker/homebrew-repo
 
 ### Prerequisites
 The AWS environment must have a user with enough privileges to perform the operations available in the writer-tool.
-Credentials for the user should be stored in a file, credentials.txt, in `~/.aws` directory. In addition, it is possible to specify
-a AWS region as part of the profile (must be located on line below `aws_secret_access_key` or `pemfile` (if used)). Region will
-be overriden if writer-tool is executed with parameter `-region`. If no region is specified, writer-tool defaults to `eu-west-1`.
+Credentials for the user should be stored in a file, credentials.txt, in `~/.aws` directory. By specifying which
+"profile" (parameter `-p` or `-profile`), you will use the credentials connected to that profile in the credentials file.
+
+In addition, it is possible to specify a AWS region as part of the profile (must be located on line below 
+`aws_secret_access_key` or `pemfile` (if used)). Region will be overridden if writer-tool is executed with parameter 
+`-region`. If no region is specified at all, writer-tool defaults to `eu-west-1`.
 
 ```bash
 [default]
@@ -32,77 +35,23 @@ aws_secret_access_key = {DV83453....}
 region = eu-north-1
 ```
 
-Optionally, credentials may be specified using the `awsKey` and `awsSecretKey` options.
-
-```bash
-writer-tool -awsKey AKIA... -awsSecretKey DV83453...
-```
-
 ## How to use
 
+### Display available arguments to writer tool
 ```bash
-$ writer-tool -h
+$ writer-tool help
+```
+
+### Display documentation for available commands and their arguments
+```bash
+$ writer-tool -command help
 ```
 
 ### Examples
 
-#### List EC2 instances
-```bash
-$ writer-tool -credentials credentials.txt -command listEc2Instances
-i-a6f3482a (52.51.119.155): internaloc-single
-i-92e3ca1a (52.51.18.157): writer
-i-7f1f8af3 (54.72.32.96): prod-writer
-```
-
-#### Describe a service
-```bash
-$ writer-tool -credentials credentials.txt -cluster dev-EditorService-cluster -service editor-service -command describeService
-Name [editor-service], Running: 1, Pending: 0, Desired: 1
-```
-
-#### Update a running service
-This command stop one task at the time, to force a new download of image from the docker registry. Useful for 
-updating a service running _latest_.
-
-```bash
-$ writer-tool -credentials credentials.txt -cluster dev-EditorService-cluster -service editor-service -command updateService
-Task: arn:aws:ecs:eu-west-1:187317280313:task/6073fd62-70d2-447e-ba9f-bdaf8eee1457
-  Stopped
-  Waiting for new task .... done
-  New task: arn:aws:ecs:eu-west-1:187317280313:task/5bafe279-c8fb-4b8e-bd8b-c69c6ce23fa5 ............ done
-Service [editor-service] is updated
-```
-
-#### Release a service
-The `releaseService` command updates the version of a running service, which means that the task definition is updated
-with the new version for the selected cluster and service. Should there be more than one container defined
-in the task definition, an additional `containerName` parameter must be specified.
-
-```bash
-$ writer-tool -credentials credentials.txt -cluster dev-EditorService-cluster -service editor-service -command releaseService \
-  -version 1.1 -containerName editorservice
-```
-
-#### Release multiple services
-Multiple services may be released in simultaneously, using `releaseServices` command. This is done by specifying a 
-JSON file containing the services to be released. `containerName` is required for services containing multiple containers.
-
-Example config file `release.json`:
-```json
-[
-	{"label":"SDS","awsKey":"...","awsSecret":"...","cluster":"writer-cluster","service":"writer-service"},
-	{"label":"Tun","profile":"...","cluster":"writerCluster","service":"writerService","containerName":"writer"}
-]
-```
-
-Example command
-```bash
-$ writer-tool -version 1.2 -updatesFile release.json -command releaseServices
-```
-
 #### Perform a thread dump on a Editor Service instance
-```
-$ writer-tool -credentials credentials.txt -command ssh -pemfile customer-pemfile.pem -instanceName editorservice 'docker exec $(docker ps -q | head -1) jstack 6' > target/dumps.txt 
+```bash
+$ writer-tool -p im -command ssh -pemfile customer-pemfile.pem -instanceName editorservice 'docker exec $(docker ps -q | head -1) jstack 6' > target/dumps.txt 
 $ head -4 target/dumps.txt
 2016-05-25 09:17:39
 Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.92-b14 mixed mode):
@@ -112,7 +61,7 @@ Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.92-b14 mixed mode):
 
 #### Perform a curl operation to get HTTP status code from a service, executed on the remote host
 ```bash
-$ writer-tool -command ssh -pemfile customer-pem.pem -instanceName editorservice 'curl --write-out %{http_code} --output /dev/null http://www.sunet.se'
+$ writer-tool -p im -command ssh -pemfile customer-pem.pem -instanceName editorservice 'curl --write-out %{http_code} --output /dev/null http://www.sunet.se'
 301
 ```
 
@@ -146,6 +95,7 @@ The config should look like
   "password": "...Jira password..."
 }
 ```
+
 Optionally, the IssueTypesSortOrder array may be specified. Default is
 
 ```json
@@ -243,8 +193,7 @@ Syntax:
     2.4      Added -login and -password flags for release notes generation
     2.4.1    Encoded html entities are un-escaped when generating release notes
     2.5      Added flag -releaseDate which can be used in release note generation as variable .releaseDate
-    2.6      Iterating over result set from AWS until all items are returned, in list functions
-             Added -maxResults to limit the number of items included in response
+    2.6      Iterating over result set from AWS until all items are returned, in list functions Added -maxResults to limit the number of items included in response
     2.6.1    Bugfix: Invalid marker when listing load balancers
     2.7      Added describeContainerInstances command
     2.8      Added 'info' to report config
@@ -255,3 +204,4 @@ Syntax:
     2.11.2   Added 'i' (pemfile alias) when executing 'login' command. Also, filtered listing of instanceId on instanceName enabled
     2.11.3   Altered describeService command, verbosity level -vv output format to json
     2.11.4   Added support for different aws regions specified either in the profile or as a command line parameter. Defaults to 'eu-west-1'.
+    3.0.0    Breaking changes! Removed possibility to specify credentials as parameters, writer-tool now depends on either usage of a credential file or IAM roles (read more here [https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html). In addition, support for assuming roles has been added. 

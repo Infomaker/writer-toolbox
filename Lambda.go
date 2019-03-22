@@ -1,83 +1,52 @@
 package main
 
 import (
-
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/lambda"
 	"strconv"
 )
 
+func DeployLambdaFunction(functionName, bucket, filename, alias, version, runtime, publish string) {
+	doPublish, err := strconv.ParseBool(publish)
 
-func _getLambdaFunctionAliasInfo(functionName, alias string) *lambda.AliasConfiguration {
-	svc := lambda.New(_getSession(), _getAwsConfig())
-
-	params := &lambda.GetAliasInput{
-		FunctionName: aws.String(functionName),
-		Name:         aws.String(alias),
+	if err != nil {
+		doPublish = false
 	}
 
-	resp, err := svc.GetAlias(params);
-	assertError(err);
-	return resp;
+	deployLambdaFunction(functionName, bucket, filename, alias, version, runtime, doPublish)
 }
 
-func _getLambdaFunctionInfo(functionName, qualifier string) *lambda.FunctionConfiguration {
-	svc := lambda.New(_getSession(), _getAwsConfig())
+func GetLambdaFunctionAliasInfo(functionName, alias string) {
+	aliasInfo := getLambdaFunctionAliasInfo(functionName, alias)
+	functionInfo := getLambdaFunctionInfo(functionName, *aliasInfo.FunctionVersion)
 
-	params := &lambda.GetFunctionConfigurationInput{
-		FunctionName: aws.String(functionName),
-		Qualifier:    aws.String(qualifier),
+	fmt.Println(*functionInfo.Version, ": ", *functionInfo.Description)
+}
+
+func GetLambdaFunctionInfo(functionName string) {
+	fmt.Println(getLambdaFunctionInfo(functionName, "$LATEST"))
+}
+
+func ListLambdaFunctions() {
+	result := listLambdaFunctions()
+
+	for i := 0; i < len(result.Functions); i++ {
+		fmt.Println(*result.Functions[i].FunctionName)
 	}
-
-	resp, err := svc.GetFunctionConfiguration(params);
-	assertError(err);
-	return resp
 }
 
-func _listLambdaFunctions() *lambda.ListFunctionsOutput {
-	svc := lambda.New(_getSession(), _getAwsConfig())
-
-	var marker = new(string)
-
-	var result = new(lambda.ListFunctionsOutput)
-
-	for marker != nil && len(result.Functions) < int(maxResult) {
-		if marker != nil && *marker == "" {
-			marker = nil
-		}
-
-		params := &lambda.ListFunctionsInput{
-			Marker: marker,
-			MaxItems: &maxResult,
-		}
-
-		resp, err := svc.ListFunctions(params)
-
-		assertError(err)
-
-		result.Functions = append(result.Functions, resp.Functions...)
-
-		marker = resp.NextMarker
-	}
-
-	return result
-}
-
-
-
-
-func _deployLambdaFunction(functionName, bucket, filename, alias, version, runtime string, publish bool) {
-	svc := lambda.New(_getSession(), _getAwsConfig())
+func deployLambdaFunction(functionName, bucket, filename, alias, version, runtime string, publish bool) {
+	sess, cfg := getSessionAndConfig()
+	svc := lambda.New(sess, cfg)
 
 	if runtime != "" {
 		params := &lambda.UpdateFunctionConfigurationInput{
 			FunctionName: aws.String(functionName),
-			Runtime: aws.String(runtime),
+			Runtime:      aws.String(runtime),
 		}
 
 		result, err := svc.UpdateFunctionConfiguration(params)
-
 		assertError(err)
 
 		fmt.Printf("Updated function %s with configuration %s\n", *result.FunctionName, *result.Runtime)
@@ -90,19 +59,19 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 	}
 
 	result, err := svc.UpdateFunctionCode(params)
+	assertError(err)
 
 	fmt.Printf("Updated %s with shasum %s\n", *result.FunctionName, *result.CodeSha256)
 
-	assertError(err);
 	if publish {
-
 		params := &lambda.PublishVersionInput{
 			FunctionName: aws.String(functionName),
 			CodeSha256:   aws.String(*result.CodeSha256),
 			Description:  aws.String(version),
 		}
 
-		published, errP := svc.PublishVersion(params);
+		published, errP := svc.PublishVersion(params)
+
 		if errP != nil {
 			errState(errP.Error())
 		}
@@ -115,7 +84,7 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 
 		_, errU := svc.UpdateAlias(paramsU)
 
-		if (errU != nil) {
+		if errU != nil {
 			errState(errU.Error())
 		}
 
@@ -123,33 +92,59 @@ func _deployLambdaFunction(functionName, bucket, filename, alias, version, runti
 	}
 }
 
-func DeployLambdaFunction(functionName, bucket, filename, alias, version, runtime, publish string) {
-	doPublish, err := strconv.ParseBool(publish)
+func getLambdaFunctionInfo(functionName, qualifier string) *lambda.FunctionConfiguration {
+	sess, cfg := getSessionAndConfig()
+	svc := lambda.New(sess, cfg)
 
-	if (err != nil) {
-		doPublish = false;
+	params := &lambda.GetFunctionConfigurationInput{
+		FunctionName: aws.String(functionName),
+		Qualifier:    aws.String(qualifier),
 	}
 
-	_deployLambdaFunction(functionName, bucket, filename, alias, version, runtime, doPublish)
+	resp, err := svc.GetFunctionConfiguration(params)
+	assertError(err)
+
+	return resp
 }
 
-func GetLambdaFunctionAliasInfo(functionName, alias string) {
-	aliasInfo := _getLambdaFunctionAliasInfo(functionName, alias)
+func listLambdaFunctions() *lambda.ListFunctionsOutput {
+	sess, cfg := getSessionAndConfig()
+	svc := lambda.New(sess, cfg)
 
-	functionInfo := _getLambdaFunctionInfo(functionName, *aliasInfo.FunctionVersion)
+	var marker = new(string)
+	var result = new(lambda.ListFunctionsOutput)
 
-	fmt.Println(*functionInfo.Version, ": ", *functionInfo.Description);
-}
+	for marker != nil && len(result.Functions) < int(maxResult) {
+		if marker != nil && *marker == "" {
+			marker = nil
+		}
 
-func GetLambdaFunctionInfo(functionName string) {
-	fmt.Println(_getLambdaFunctionInfo(functionName, "$LATEST"))
-}
+		params := &lambda.ListFunctionsInput{
+			Marker:   marker,
+			MaxItems: &maxResult,
+		}
 
-func ListLambdaFunctions() {
+		resp, err := svc.ListFunctions(params)
+		assertError(err)
 
-	result := _listLambdaFunctions()
-
-	for i := 0; i < len(result.Functions); i++ {
-		fmt.Println(*result.Functions[i].FunctionName)
+		result.Functions = append(result.Functions, resp.Functions...)
+		marker = resp.NextMarker
 	}
+
+	return result
+}
+
+func getLambdaFunctionAliasInfo(functionName, alias string) *lambda.AliasConfiguration {
+	sess, cfg := getSessionAndConfig()
+	svc := lambda.New(sess, cfg)
+
+	params := &lambda.GetAliasInput{
+		FunctionName: aws.String(functionName),
+		Name:         aws.String(alias),
+	}
+
+	resp, err := svc.GetAlias(params)
+	assertError(err)
+
+	return resp
 }

@@ -6,181 +6,350 @@ import (
 	"os"
 )
 
+type CommandHelp struct {
+	CommandName        string
+	CommandDescription string
+	Parameters         []Parameter
+}
+
+type Parameter struct {
+	ParameterName        string
+	ParameterDescription string
+	Required             bool
+}
+
+func newCommandHelp(name, description string) *CommandHelp {
+	return &CommandHelp{CommandName: name, CommandDescription: description}
+}
+
+func newParameter(name, description string, required bool) *Parameter {
+	return &Parameter{ParameterName: name, ParameterDescription: description, Required: required}
+}
+
 func printCommandHelp() {
-	var m = map[string]string{
-		"help": "Prints this help.",
-		"copyFileFromS3Bucket": "Copies file from S3 to local system" +
-			"                         -s3bucket     : The source bucket   (required)\n" +
-			"                         -s3filename   : The filename to copy   (required)\n" +
-			"                         -output       : The target directory   (required)\n" +
-			"                         Example: -command copyFileFromS3Bucket -s3bucket images -s3filename cat.gif -output ~/Downloads",
-		"createReleaseNotes": "Create release notes document from Jira issues. Needs -reportConfig and -reportTemplate. Optional to use -dependenciesFile\n" +
-			"                             -reportConfig      : The configuration file used to fetch issues from Jira   (required)\n" +
-			"                         -reportTemplate    : Transforms jira issues into release notes file   (required)\n" +
-			"                         -dependenciesFile  : Specifies dependencies for service, used in template\n" +
-			"                         -version           : Specifies the version that is released. Can be used in template as .Version\n" +
-			"                         -releaseDate       : Specifies the release date. Can be used in template as .ReleaseDate\n" +
-			"                         -login             : Jira login\n" +
-			"                         -password          : Jira password\n",
-		"createReport":        "Generates a report of running services. Needs -reportConfig and -reportTemplate",
-		"listS3Buckets":       "List available S3 buckets",
-		"listFilesInS3Bucket": "List available objects in an S3 bucket. Requires -s3bucket. -s3filename could be used as prefix for filtering",
-		"listClusters":        "List available clusters. -v will also list services for all clusters",
-		"listServices":        "List available services. Needs -cluster flag.",
-		"listTasks":           "List tasks for a service. Needs -cluster, -service flags.",
-		"deployLambdaFunction": "Deploys new code for a lambda function" +
-			"                         -s3bucket     : The bucket where the new code is placed in   (required)\n" +
-			"                         -s3filename   : The filename of the code zip   (required)\n" +
-			"                         -functionName : The name of the function to update   (required)\n" +
-			"                         -publish      : 'True' to publish a new version   (optional) default 'false'\n" +
-			"                               -alias      : The alias to update   (required)\n" +
-			"                               -version    : The version number to publish   (required)\n" +
-			"                         Example: -command deployLambdaFunction -s3bucket newCode -s3filename myCode.zip -functionName addNumbers -publish true -alias PRIMARY -version 1.2.1",
-		"describeService": "Describes the service. Needs -cluster, -service flags. Optionaly -v and -vv may be used.",
-		"updateService":   "Stop/start all running tasks for the specified service. Needs -cluster, -service flags.",
-		"updateServices": "Stop/start all running tasks for specified services. Needs -updateFiles flag.\n" +
-			"                           -updatesFile : Path to a file containing services to update. Format of file is: \n" +
-			"                             [\n" +
-			"                               {\n" +
-			"                                  \"awsKey\": \"(aws key)\"\n" +
-			"                                  \"awsSecret\": \"(aws secret key)\"\n" +
-			"                                  \"cluster\": \"(cluster as reported using -listClusters)\"\n" +
-			"                                  \"service\": \"(service as reported using -listServices)\"\n" +
-			"                                  \"label\": \"(Label that should be used in output for service)\"\n" +
-			"                               }\n" +
-			"                             ]\n",
-		"releaseService": "Creates a new release for the service. Neews -cluster, -service, -version flags.",
-		"releaseServices": "Release all services specified. Needs -version, -updateFiles flag. \n" +
-			"                           -updatesFile : Path to a file containing services to update. Format of file is: \n" +
-			"                             [\n" +
-			"                               {\n" +
-			"                                  \"awsKey\": \"(aws key)\"\n" +
-			"                                  \"awsSecret\": \"(aws secret key)\"\n" +
-			"                                  \"cluster\": \"(cluster as reported using -listClusters)\"\n" +
-			"                                  \"service\": \"(service as reported using -listServices)\"\n" +
-			"                                  \"label\": \"(Label that should be used in output for service)\"\n" +
-			"                               }\n" +
-			"                             ]\n",
-		"listEc2Instances":           "List available EC2 instances.",
-		"listLoadBalancers":          "List available Load Balancers and their contained EC2 instances.",
-		"listLambdaFunctions":        "List available lambda functions.",
-		"getLambdaFunctionInfo":      "Get lambda function information. Requires -functionName",
-		"getLambdaFunctionAliasInfo": "Get lambda function information. Requires -functionName, -alias",
-		"runtime":                    "Specifies the runtime to use for the lambda function. See https://docs.aws.amazon.com/cli/latest/reference/lambda/update-function-configuration.html for rumtimes. Uses current runtime for function if unset.",
-		"getEntity": "Gets an entity from the writer load balancer\n" +
-			"                         -loadBalancer : The load balancer fronting the writer instances    (required)\n" +
-			"                         {entityId}    : The ID of the entity to fetch    (required)\n" +
-			"                         Example: -command getEntity -loadBalancer writer-loadbalancer a9fbd742-ea87-425d-ae86-045ab3ac91c1",
-		"ssh": "Executes a command over SSH for the specified service.\n" +
-			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
-			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
-			"                         -pemfile      : The SSH pem file used for authentication    (required)\n" +
-			"                         {command}     : The command to execute (e.g. 'ls -l')   (required)\n" +
-			"                         Example: -command ssh -instanceName writer -pemfile ~/.ssh/pem-files/im-dev tail -20 /var/log/writer/writer.log",
-		"scp": "Copies files from the specified instance(s). Needs -instanceName or -instanceId, -output and optionally -recursive flags.\n" +
-			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
-			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
-			"                         -pemfile      : The SSH pem file used for authentication    (optional)\n" +
-			"                         -output       : the target directory   (required)\n" +
-			"                         -recursive    : copies from source recursively\n" +
-			"                         Example: -command scp -instanceName writer -pemfile ~/.ssh/pem-files/im-dev -output Documents -recursive /var/log/writer",
-		"login": "Log in to instance using SSH\n" +
-			"                         -instanceName : The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name   (required if instanceId is not specified)\n" +
-			"                         -instanceId   : The specific aws instance to use as source.   (required if instanceName is not specified)\n" +
-			"                         -pemfile      : The SSH pem file used for authentication    (optional)",
-		"version": "Display writer-tool version.",
-	}
+	var commands []CommandHelp
 
-	k := sortKeys(m)
+	// Help
+	help := newCommandHelp("help", "Prints this help")
+	commands = append(commands, *help)
+	//commands := [...]CommandHelp{*help}
 
-	for _, v := range k {
-		fmt.Print(v)
-		for j := 0; j < 20-(len([]rune(v))); j++ {
-			fmt.Print(" ")
+	// copyFileFromS3Bucket
+	copyFileFromS3Bucket := newCommandHelp("copyFileFromS3Bucket", "Copies file from S3 to local system")
+	copyFileFromS3Bucket.Parameters = append(copyFileFromS3Bucket.Parameters,
+		*newParameter("s3bucket", "The source bucket", true),
+		*newParameter("s3filename", "The filename to copy", true),
+		*newParameter("output", "The target directory", true),
+	)
+	commands = append(commands, *copyFileFromS3Bucket)
+
+	createReleaseNotes := newCommandHelp("createReleaseNotes", "Create release notes document from Jira issues")
+	createReleaseNotes.Parameters = append(createReleaseNotes.Parameters,
+		*newParameter("reportConfig", "The configuration file used to fetch issues from Jira", true),
+		*newParameter("reportTemplate", "Transforms jira issues into release notes file", true),
+		*newParameter("dependenciesFile", "Specifies dependencies for service, used in template", false),
+		*newParameter("version", "Specifies the version that is released. Can be used in template as .Version", false),
+		*newParameter("releaseDate", "Specifies the release date. Can be used in template as .ReleaseDate", false),
+		*newParameter("login", "Jira login", false),
+		*newParameter("password", "Jira password", false),
+	)
+	commands = append(commands, *createReleaseNotes)
+
+	createReport := newCommandHelp("createReport", "Generates a report of running services")
+	createReport.Parameters = append(createReport.Parameters,
+		*newParameter("reportConfig", "The configuration file used to fetch issues from Jira", true),
+		*newParameter("reportTemplate", "Transform jira issues into release notes file", true),
+	)
+	commands = append(commands, *createReport)
+
+	listS3Buckets := newCommandHelp("listS3Buckets", "List available S3 buckets")
+	commands = append(commands, *listS3Buckets)
+
+	listFilesInS3Bucket := newCommandHelp("listFilesInS3Bucket", "List available objects in an S3 bucket")
+	listFilesInS3Bucket.Parameters = append(listFilesInS3Bucket.Parameters,
+		*newParameter("s3Bucket", "The source bucket", true),
+		*newParameter("s3Filename", "The filename to copy could be used as prefix for filtering", false),
+	)
+	commands = append(commands, *listFilesInS3Bucket)
+
+	listClusters := newCommandHelp("listClusters", "List available clusters. -v will also list services for all clusters")
+	commands = append(commands, *listClusters)
+
+	listServices := newCommandHelp("listServices", "List available services")
+	listServices.Parameters = append(listServices.Parameters,
+		*newParameter("cluster", "Cluster for which to list services", true),
+	)
+	commands = append(commands, *listServices)
+
+	listTasks := newCommandHelp("listTasks", "List tasks for a service")
+	listTasks.Parameters = append(listTasks.Parameters,
+		*newParameter("cluster", "Cluster for which to list tasks", true),
+		*newParameter("service", "Service for which to list tasks", true),
+	)
+	commands = append(commands, *listTasks)
+
+	deployLambdaFunction := newCommandHelp("deployLambdaFunction", "Deploys new code for a lambda function")
+	deployLambdaFunction.Parameters = append(deployLambdaFunction.Parameters,
+		*newParameter("s3bucket", "The bucket where the new code is placed in", true),
+		*newParameter("s3filename", "The filename of the code zip", true),
+		*newParameter("functionName", "The name of the function to update", true),
+		*newParameter("publish", "'True' to publish a new version (optional) default 'false'", false),
+		*newParameter("alias", "The alias to update", true),
+		*newParameter("version", "The version number to publish", true),
+		*newParameter("runtime", "Specifies the runtime to use for the lambda function. See https://docs.aws.amazon.com/cli/latest/reference/lambda/update-function-configuration.html for runtimes. Uses current runtime for function if unset", true),
+	)
+	commands = append(commands, *deployLambdaFunction)
+
+	describeService := newCommandHelp("describeService", "Describes the service. Optionally -v and -vv may be used")
+	describeService.Parameters = append(describeService.Parameters,
+		*newParameter("cluster", "Cluster for which the service belongs", true),
+		*newParameter("service", "Service to describe", true),
+	)
+	commands = append(commands, *describeService)
+
+	updateService := newCommandHelp("updateService", "Stop/start all running tasks for the specified service")
+	updateService.Parameters = append(updateService.Parameters,
+		*newParameter("cluster", "Cluster for which the service to update belongs", true),
+		*newParameter("service", "Service to update", true),
+	)
+	commands = append(commands, *updateService)
+
+	updateServices := newCommandHelp("updateServices", "Stop/start all running tasks for specified services")
+	updateServices.Parameters = append(updateServices.Parameters,
+		*newParameter("updatesFile", "[{\"profile\": \"(profile in credential file)\", \"region\": \"(region to use (if not specified, writer-tool will use region specified in credential file))\", \"cluster\": \"(cluster as reported using -listClusters)\", \"service\": \"(service as reported using -listServices)\", \"containerName\": \"(name of container to update (if multiple containers in same service))\", \"label\": \"(Label that should be used in output for service)\"}]", true),
+	)
+	commands = append(commands, *updateServices)
+
+	releaseService := newCommandHelp("releaseService", "Creates a new release for the service")
+	releaseService.Parameters = append(releaseService.Parameters,
+		*newParameter("cluster", "Cluster for which the service to release belongs", true),
+		*newParameter("service", "Service to release", true),
+		*newParameter("version", "Version to release", true),
+	)
+	commands = append(commands, *releaseService)
+
+	releaseServices := newCommandHelp("releaseServices", "Release all services specified")
+	releaseServices.Parameters = append(releaseServices.Parameters,
+		*newParameter("updatesFile", "[{\"profile\": \"(profile in credential file)\", \"region\": \"(region to use (if not specified, writer-tool will use region specified in credential file))\", \"cluster\": \"(cluster as reported using -listClusters)\", \"service\": \"(service as reported using -listServices)\", \"containerName\": \"(name of container to update (if multiple containers in same service))\", \"label\": \"(Label that should be used in output for service)\"}]", true),
+	)
+	commands = append(commands, *releaseServices)
+
+	listEc2Instances := newCommandHelp("listEc2Instances", "List available EC2 instances")
+	commands = append(commands, *listEc2Instances)
+
+	listLoadBalancers := newCommandHelp("listLoadBalancers", "List available Load Balancers and their contained EC2 instances")
+	commands = append(commands, *listLoadBalancers)
+
+	listLambdaFunctions := newCommandHelp("listLambdaFunctions", "List available lambda functions")
+	commands = append(commands, *listLambdaFunctions)
+
+	getLambdaFunctionInfo := newCommandHelp("getLambdaFunctionInfo", "Get lambda function information")
+	getLambdaFunctionInfo.Parameters = append(getLambdaFunctionInfo.Parameters,
+		*newParameter("functionName", "Name of lambda for which to fetch info", true),
+	)
+	commands = append(commands, *getLambdaFunctionInfo)
+
+	getLambdaFunctionAliasInfo := newCommandHelp("getLambdaFunctionAliasInfo", "Get lambda function information")
+	getLambdaFunctionAliasInfo.Parameters = append(getLambdaFunctionAliasInfo.Parameters,
+		*newParameter("functionName", "Name of lambda for which to fetch info", true),
+		*newParameter("alias", "Alias of lambda for which to fetch info", true),
+	)
+	commands = append(commands, *getLambdaFunctionAliasInfo)
+
+	getEntity := newCommandHelp("getEntity", "Gets an entity from the writer load balancer")
+	getEntity.Parameters = append(getEntity.Parameters,
+		*newParameter("loadBalancer", "The load balancer fronting the writer instances", true),
+		*newParameter("{entityId}", "The ID of the entity to fetch", true),
+	)
+	commands = append(commands, *getEntity)
+
+	ssh := newCommandHelp("ssh", "Executes a command over SSH for the specified service")
+	ssh.Parameters = append(ssh.Parameters,
+		*newParameter("instanceName", "The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name (required if instanceId is not specified)", false),
+		*newParameter("instanceId", "The specific aws instance to use as source. (required if instanceName is not specified)", false),
+		*newParameter("pemfile", "The SSH pem file used for authentication", true),
+		*newParameter("{command}", "The command to execute (e.g. 'ls -l')", true),
+	)
+	commands = append(commands, *ssh)
+
+	scp := newCommandHelp("scp", "Copies files from the specified instance(s)")
+	scp.Parameters = append(scp.Parameters,
+		*newParameter("instanceName", "The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name (required if instanceId is not specified)", false),
+		*newParameter("instanceId", "The specific aws instance to use as source. (required if instanceName is not specified)", false),
+		*newParameter("pemfile", "The SSH pem file used for authentication", false),
+		*newParameter("output", "The target directory", true),
+		*newParameter("recursive", "Copies from source recursively", false),
+	)
+	commands = append(commands, *scp)
+
+	login := newCommandHelp("login", "Log in to instance using SSH")
+	login.Parameters = append(login.Parameters,
+		*newParameter("instanceName", "The aws instance(s) to use as source(s). Operation will occur on all instances with the specific name (required if instanceId is not specified)", false),
+		*newParameter("instanceId", "The specific aws instance to use as source. (required if instanceName is not specified)", false),
+		*newParameter("pemfile", "The SSH pem file used for authentication", false),
+	)
+	commands = append(commands, *login)
+
+	version := newCommandHelp("version", "Display writer-tool version")
+	commands = append(commands, *version)
+
+	// Print commands and parameters
+	maxCmdNameLen := 0
+	maxParamNameLen := 0
+
+	// Calculate indentations
+	for i := 0; i < len(commands); i++ {
+		command := commands[i]
+		if len(command.CommandName) > maxCmdNameLen {
+			maxCmdNameLen = len(command.CommandName)
 		}
-		fmt.Println(m[v])
+
+		for j := 0; j < len(command.Parameters); j++ {
+			parameter := command.Parameters[j]
+			if len(parameter.ParameterName) > maxParamNameLen {
+				maxParamNameLen = len(parameter.ParameterName)
+			}
+		}
 	}
 
+	// Do print...
+	for k := 0; k < len(commands); k++ {
+		command := commands[k]
+		cmdCurlen := len(command.CommandName)
+		cmdOffset := maxCmdNameLen - cmdCurlen
+
+		cmdLine := command.CommandName + "  "
+		for l := 0; l < cmdOffset; l++ {
+			cmdLine = cmdLine + " "
+		}
+
+		cmdLine = "  " + cmdLine + command.CommandDescription + "\n"
+		fmt.Print(cmdLine)
+
+		for j := 0; j < len(command.Parameters); j++ {
+			parameter := command.Parameters[j]
+
+			req := "optional"
+			if parameter.Required {
+				req = "required"
+			}
+
+			paramCurlen := len(parameter.ParameterName)
+			paramOffset := maxParamNameLen - paramCurlen
+
+			if maxCmdNameLen > maxParamNameLen {
+				paramOffset = maxCmdNameLen - paramCurlen
+			}
+
+			paramLine := "-" + parameter.ParameterName + "  "
+			for n := 0; n < paramOffset; n++ {
+				paramLine = paramLine + " "
+			}
+
+			paramLine = "      " + paramLine + parameter.ParameterDescription + " (" + req + ")\n"
+			fmt.Print(paramLine)
+		}
+
+		fmt.Print("\n")
+	}
+}
+
+func validateListFilesInS3Bucket() {
+	if bucket == "" {
+		errUsage("s3bucket must be specified")
+	}
+}
+
+func validateCopyFileFromS3Bucket() {
+	if bucket == "" {
+		errUsage("s3bucket must be specified")
+	}
+
+	if filename == "" {
+		errUsage("s3filename must be specified")
+	}
+
+	if output == "" {
+		errUsage("output must be specified")
+	}
+}
+
+func validateDeployLambdaFunction() {
+	if bucket == "" {
+		errUsage("s3bucket must be speficied")
+	}
+
+	if filename == "" {
+		errUsage("s3filename must be specified")
+	}
+
+	if functionName == "" {
+		errUsage("functionName must be specified")
+	}
+
+	if publish == "true" && alias == "" {
+		errUsage("alias must be specified when publishing")
+	}
+
+	if publish == "true" && version == "" {
+		errUsage("version must be specified when publishing")
+	}
 }
 
 func executeCommand() {
 	switch command {
 	case "copyFileFromS3Bucket":
-		if bucket == "" {
-			errUsage("s3bucket must be specified")
-		}
-		if filename == "" {
-			errUsage("s3filename must be specified")
-		}
-		if output == "" {
-			errUsage("output must be speficied")
-		}
+		validateCopyFileFromS3Bucket()
 		CopyFileFromS3Bucket(bucket, filename, output)
 	case "createReleaseNotes":
-		bytes := _readConfigFromFile()
-		template := _readTemplateFromFile()
-		version := _getVersion()
-		dependencies := _readDependenciesFromFile()
+		bytes := readConfigFromFile()
+		template := readTemplateFromFile()
+		version := getVersion()
+		dependencies := readDependenciesFromFile()
 		GenerateReleaseNotes(bytes, template, version, releaseDate, dependencies)
 	case "createReport":
-		bytes := _readConfigFromFile()
-		template := _readTemplateFromFile()
+		bytes := readConfigFromFile()
+		template := readTemplateFromFile()
 		GenerateReport(bytes, template)
 	case "deployLambdaFunction":
-		if bucket == "" {
-			errUsage("s3bucket must be speficied")
-		}
-		if filename == "" {
-			errUsage("s3filename must be specified")
-		}
-		if functionName == "" {
-			errUsage("functionName must be specified")
-		}
-		if publish == "true" && alias == "" {
-			errUsage("alias must be specified when publishing")
-		}
-		if publish == "true" && version == "" {
-			errUsage("version must be specified when publishing")
-		}
+		validateDeployLambdaFunction()
 		DeployLambdaFunction(functionName, bucket, filename, alias, version, runtime, publish)
 	case "listS3Buckets":
 		ListS3Buckets()
 	case "listFilesInS3Bucket":
-		if bucket == "" {
-			errUsage("s3bucket must be specified")
-		}
+		validateListFilesInS3Bucket()
 		ListFilesInS3Bucket(bucket, filename)
 	case "listClusters":
 		ListClusters()
 	case "listServices":
-		clusterArn := _getClusterArn()
+		clusterArn := getClusterArn()
 		ListServices(clusterArn)
 	case "listTasks":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
 		ListTasks(clusterArn, serviceArn)
 	case "describeService":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
 		DescribeService(clusterArn, serviceArn)
 	case "describeContainerInstances":
-		clusterArn := _getClusterArn()
+		clusterArn := getClusterArn()
 		DescribeContainerInstances(clusterArn)
 	case "updateService":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
 		UpdateService(clusterArn, serviceArn)
 	case "updateServices":
-		updatesFile := _getUpdatesFile()
+		updatesFile := getUpdatesFile()
 		UpdateServices(updatesFile)
 	case "releaseService":
-		clusterArn := _getClusterArn()
-		serviceArn := _getServiceArn()
-		version := _getVersion()
+		clusterArn := getClusterArn()
+		serviceArn := getServiceArn()
+		version := getVersion()
 		ReleaseService(clusterArn, serviceArn, version)
 	case "releaseServices":
-		updatesFile := _getUpdatesFile()
-		version := _getVersion()
+		updatesFile := getUpdatesFile()
+		version := getVersion()
 		ReleaseServices(version, updatesFile)
 	case "listEc2Instances":
 		ListEc2Instances(instanceName)
@@ -278,5 +447,4 @@ func executeCommand() {
 	default:
 		errUsage("Unknown command: " + command)
 	}
-
 }
